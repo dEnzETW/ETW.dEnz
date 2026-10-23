@@ -1000,7 +1000,7 @@ S.MainScale = create("UIScale", {Scale = uiScale, Parent = S.MainFrame})
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 450, 900), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 300, 650))
+            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 280, 640), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 240, 560))
         end
     end)
 
