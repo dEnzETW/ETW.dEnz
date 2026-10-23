@@ -880,18 +880,16 @@ local function BuildHubUI()
     local vp = Camera.ViewportSize
 local isPhone = vp.X < 600
 
-local initialWidth = math.min(
-    vp.X * (isPhone and 0.88 or 0.68),
-    isPhone and 420 or 640
-)
+local initialWidth
+local initialHeight
 
-local initialHeight = math.min(
-    vp.Y * (isPhone and 0.62 or 0.68),
-    isPhone and 480 or 560
-)
-
-initialWidth = math.max(initialWidth, math.min(vp.X - 16, 300))
-initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
+if isPhone then
+    initialWidth = math.floor(vp.X * 0.72)
+    initialHeight = math.floor(vp.Y * 0.55)
+else
+    initialWidth = math.min(vp.X * 0.68, 640)
+    initialHeight = math.min(vp.Y * 0.68, 560)
+end
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
@@ -905,8 +903,10 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(50, 50, 60), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(280, 240), MaxSize = Vector2.new(640, 560)})
-    })
+        create("UISizeConstraint", {
+    MinSize = Vector2.new(200, 180),
+    MaxSize = Vector2.new(640, 560)
+})
 
     local uiScale = Camera.ViewportSize.X < 600 and 0.72 or 1
 S.MainScale = create("UIScale", {Scale = uiScale, Parent = S.MainFrame})
