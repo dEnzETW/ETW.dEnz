@@ -908,10 +908,19 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(0, 225, 255), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
+        create("UISizeConstraint", {MinSize = Vector2.new(math.min(280, vp.X - 16), math.min(240, vp.Y - 40)), MaxSize = Vector2.new(math.max(280, math.min(900, vp.X - 16)), math.max(240, math.min(650, vp.Y - 40)))})
     })
 
     S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
+
+    -- Responsive sizing: keep the whole panel inside the current viewport.
+    local function fitToViewport()
+        local size = Camera.ViewportSize
+        local w = math.clamp(size.X * (size.X < 600 and 0.88 or 0.68), math.min(280, size.X - 16), math.min(900, size.X - 16))
+        local h = math.clamp(size.Y * (size.X < 600 and 0.78 or 0.68), math.min(240, size.Y - 40), math.min(650, size.Y - 40))
+        S.MainFrame.Size = G.Math.ud2(0, w, 0, h)
+    end
+    S.Runtime.connections[#S.Runtime.connections + 1] = Camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitToViewport)
 
     S.TopBar = create("Frame", {
         Name = "TopBar",
@@ -1002,7 +1011,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 450, 900), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 300, 650))
+            local liveVp = Camera.ViewportSize
+            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, math.min(280, liveVp.X - 16), math.min(900, liveVp.X - 16)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, math.min(240, liveVp.Y - 40), math.min(650, liveVp.Y - 40)))
         end
     end)
 
@@ -1036,7 +1046,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Parent = S.Sidebar
     }, {
         create("UIPadding", {PaddingTop = G.Math.ud(0, 8)}),
-        create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center})
+        create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, math.max(2, math.min(5, math.floor((initialHeight - 42 - 8 - 8 * 24) / 7)))), HorizontalAlignment = Enum.HorizontalAlignment.Center})
     })
 
     S.ContentBackdrop = create("Frame", {
@@ -1366,7 +1376,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         S.Pages[internalName] = page
 
         local btn = create("TextButton", {
-            Size = G.Math.ud2(0.9, 0, 0, 34),
+            Size = G.Math.ud2(0.9, 0, 0, math.max(22, math.min(34, math.floor((initialHeight - 42 - 16) / 8)))),
             BackgroundColor3 = G.Math.rgb(57, 22, 35),
             BackgroundTransparency = 1,
             Text = getText(tabKey),
