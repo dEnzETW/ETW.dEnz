@@ -878,8 +878,20 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-    local initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
-    local initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
+local isPhone = vp.X < 600
+
+local initialWidth = math.min(
+    vp.X * (isPhone and 0.88 or 0.68),
+    isPhone and 420 or 640
+)
+
+local initialHeight = math.min(
+    vp.Y * (isPhone and 0.62 or 0.68),
+    isPhone and 480 or 560
+)
+
+initialWidth = math.max(initialWidth, math.min(vp.X - 16, 300))
+initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
