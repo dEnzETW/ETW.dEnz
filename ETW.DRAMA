@@ -71,8 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 15,
-    eatDelay = 0.01
+    tpDelay = 0.02
 }
 
 local LOCALIZATION = {
@@ -2305,14 +2304,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                                 lookTarget = Vector3.new(partPos.X, standPos.Y, partPos.Z)
                             end
 
-                            -- Delay between auto-farm teleport cycles
-                            task.wait(states.tpDelay)
-
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
 
-                            -- Захват starts immediately after teleport; no 15s wait here
+                            task.wait(states.tpDelay)
+
                             -- Захват
                             if currentChunkVal.Value == nil then
                                 localGrab:Fire()
@@ -2336,7 +2333,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                                 if events.ChunkLoaded then
                                     events.ChunkLoaded:FireServer(held)
                                 end
-                                task.wait(states.eatDelay)
+                                task.wait(0.02)
 
                                 localEat:Fire()
 
