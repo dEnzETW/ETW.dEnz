@@ -905,7 +905,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(50, 50, 60), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
+        create("UISizeConstraint", {MinSize = Vector2.new(280, 240), MaxSize = Vector2.new(640, 560)})
     })
 
     S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
