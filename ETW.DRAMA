@@ -908,7 +908,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         create("UISizeConstraint", {MinSize = Vector2.new(280, 240), MaxSize = Vector2.new(640, 560)})
     })
 
-    S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
+    local uiScale = Camera.ViewportSize.X < 600 and 0.72 or 1
+S.MainScale = create("UIScale", {Scale = uiScale, Parent = S.MainFrame})
 
     S.TopBar = create("Frame", {
         Name = "TopBar",
