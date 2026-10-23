@@ -523,7 +523,7 @@ local function create(className, properties, children)
 end
 
 local function cCorner(r, p) return create("UICorner", {CornerRadius = G.Math.ud(0, r or 8), Parent = p}) end
-local function cStroke(c, t, p) return create("UIStroke", {Color = c or G.Math.rgb(55, 55, 65), Thickness = t or 1, Parent = p}) end
+local function cStroke(c, t, p) return create("UIStroke", {Color = c or G.Math.rgb(92, 19, 39), Thickness = t or 1, Parent = p}) end
 local function cTextConstraint(minS, maxS, p)
     return create("UITextSizeConstraint", {
         MinTextSize = minS or 8,
@@ -698,12 +698,12 @@ local NotificationGui = create("ScreenGui", {
 })
 
 local NOTIFY_COLORS = {
-    Info = G.Math.rgb(240, 240, 250),
+    Info = G.Math.rgb(235, 220, 226),
     Success = G.Math.rgb(255, 255, 255),
-    Warning = G.Math.rgb(220, 220, 230),
-    Error = G.Math.rgb(255, 75, 75),
-    Background = G.Math.rgb(18, 18, 22),
-    Stroke = G.Math.rgb(50, 50, 60)
+    Warning = G.Math.rgb(190, 150, 162),
+    Error = G.Math.rgb(180, 35, 60),
+    Background = G.Math.rgb(12, 5, 8),
+    Stroke = G.Math.rgb(83, 17, 35)
 }
 
 local activeToastList = {}
@@ -898,13 +898,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Size = G.Math.ud2(0, initialWidth, 0, initialHeight),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(14, 14, 18),
+        BackgroundColor3 = G.Math.rgb(10, 4, 7),
         Active = true,
         ClipsDescendants = true,
         Parent = S.ScreenGui
     }, {
         cCorner(14),
-        cStroke(G.Math.rgb(50, 50, 60), 1.5),
+        cStroke(G.Math.rgb(83, 17, 35), 1.5),
         create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
     })
 
@@ -934,40 +934,40 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "CloseBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -36, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = G.Math.rgb(29, 8, 14),
         Text = "X",
         TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
+    }, { cCorner(7), cStroke(G.Math.rgb(75, 15, 31), 1) })
 
     S.minBtn = create("TextButton", {
         Name = "MinBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -70, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = G.Math.rgb(29, 8, 14),
         Text = "—",
         TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
+    }, { cCorner(7), cStroke(G.Math.rgb(75, 15, 31), 1) })
 
     S.closeBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(200, 45, 45), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(125, 20, 42), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
     end)
     S.closeBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(29, 8, 14), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
     end)
 
     S.minBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(45, 45, 55), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(75, 15, 31), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
     end)
     S.minBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(29, 8, 14), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
     end)
 
     S.ResizeGrip = create("ImageButton", {
@@ -1014,14 +1014,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "Sidebar",
         Size = G.Math.ud2(0, 130, 1, -42),
         Position = G.Math.ud2(0, 0, 0, 42),
-        BackgroundColor3 = G.Math.rgb(20, 20, 24),
+        BackgroundColor3 = G.Math.rgb(18, 6, 10),
         BorderSizePixel = 0,
         ZIndex = 5,
         Parent = S.MainFrame
     }, {
         cCorner(14),
-        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0}),
-        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0})
+        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = G.Math.rgb(18, 6, 10), BorderSizePixel = 0}),
+        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = G.Math.rgb(18, 6, 10), BorderSizePixel = 0})
     })
 
     S.SidebarContent = create("Frame", {
@@ -1039,7 +1039,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "ContentBackdrop",
         Size = G.Math.ud2(1, -130, 1, -42),
         Position = G.Math.ud2(0, 130, 0, 42),
-        BackgroundColor3 = G.Math.rgb(16, 16, 20),
+        BackgroundColor3 = G.Math.rgb(14, 5, 8),
         BorderSizePixel = 0,
         ZIndex = 4,
         Parent = S.MainFrame
@@ -1058,12 +1058,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "SearchBarFrame",
         Size = G.Math.ud2(1, -20, 0, 32),
         Position = G.Math.ud2(0, 10, 0, 6),
-        BackgroundColor3 = G.Math.rgb(22, 22, 28),
+        BackgroundColor3 = G.Math.rgb(24, 7, 12),
         ZIndex = 6,
         Parent = S.Content
     }, {
         cCorner(6),
-        cStroke(G.Math.rgb(40, 40, 50), 1),
+        cStroke(G.Math.rgb(58, 12, 24), 1),
         create("ImageLabel", {
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = G.Math.ud2(0, 9, 0.5, -7),
@@ -1081,7 +1081,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         BackgroundTransparency = 1,
         PlaceholderText = getText("searchPlaceholder"),
         Text = "",
-        TextColor3 = G.Math.rgb(240, 240, 250),
+        TextColor3 = G.Math.rgb(235, 220, 226),
         PlaceholderColor3 = G.Math.rgb(120, 120, 135),
         Font = Enum.Font.GothamMedium,
         TextSize = 11,
@@ -1095,7 +1095,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "ClearSearchBtn",
         Size = G.Math.ud2(0, 22, 0, 22),
         Position = G.Math.ud2(1, -26, 0.5, -11),
-        BackgroundColor3 = G.Math.rgb(32, 32, 40),
+        BackgroundColor3 = G.Math.rgb(43, 10, 19),
         Text = "✖",
         TextColor3 = G.Math.rgb(160, 160, 175),
         Font = Enum.Font.GothamBold,
@@ -1115,19 +1115,19 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     S.MiniButton = create("TextButton", {
         Size = G.Math.ud2(0, 48, 0, 48),
         Position = G.Math.ud2(0, 20, 0.5, -24),
-        BackgroundColor3 = G.Math.rgb(18, 18, 24),
+        BackgroundColor3 = G.Math.rgb(14, 5, 8),
         Text = "",
         Visible = false,
         Parent = S.ScreenGui
     }, {
         cCorner(12),
-        cStroke(G.Math.rgb(70, 70, 85), 1.5),
+        cStroke(G.Math.rgb(115, 23, 48), 1.5),
         create("ImageLabel", {
             Size = G.Math.ud2(1, -14, 1, -14),
             Position = G.Math.ud2(0, 7, 0, 7),
             BackgroundTransparency = 1,
             Image = "rbxassetid://7059346373",
-            ImageColor3 = G.Math.rgb(240, 240, 245),
+            ImageColor3 = G.Math.rgb(145, 24, 50),
             ScaleType = Enum.ScaleType.Fit
         })
     })
@@ -1137,19 +1137,19 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Name = "Watermark",
         Size = G.Math.ud2(0, 260, 0, 28),
         Position = G.Math.ud2(0.5, -130, 0, 10),
-        BackgroundColor3 = G.Math.rgb(14, 14, 18),
+        BackgroundColor3 = G.Math.rgb(10, 4, 7),
         BackgroundTransparency = 0.15,
         Visible = states.watermark,
         Parent = S.ScreenGui
     }, {
         cCorner(8),
-        cStroke(G.Math.rgb(60, 60, 75), 1.2),
+        cStroke(G.Math.rgb(100, 20, 42), 1.2),
         create("TextLabel", {
             Name = "StatsTxt",
             Size = G.Math.ud2(1, 0, 1, 0),
             BackgroundTransparency = 1,
             Text = "HUB  |  FPS: 60  |  Ping: 0ms",
-            TextColor3 = G.Math.rgb(240, 240, 245),
+            TextColor3 = G.Math.rgb(145, 24, 50),
             Font = Enum.Font.GothamBold,
             TextSize = 11
         })
@@ -1171,12 +1171,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Size = G.Math.ud2(0, 290, 0, 145),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(20, 20, 26),
+        BackgroundColor3 = G.Math.rgb(18, 6, 10),
         ZIndex = 51,
         Parent = S.ModalOverlay
     }, {
         cCorner(10),
-        cStroke(G.Math.rgb(60, 60, 75), 1.5),
+        cStroke(G.Math.rgb(100, 20, 42), 1.5),
         create("TextLabel", {
             Name = "Title",
             Size = G.Math.ud2(1, -20, 0, 24),
@@ -1214,18 +1214,18 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
     S.modalBtnCancel = create("TextButton", {
         Size = G.Math.ud2(0.47, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(32, 32, 40),
+        BackgroundColor3 = G.Math.rgb(43, 10, 19),
         Text = getText("modalBtnCancel"),
         TextColor3 = G.Math.rgb(220, 220, 235),
         Font = Enum.Font.GothamBold,
         TextSize = 11,
         ZIndex = 53,
         Parent = S.ModalBtnRow
-    }, { cCorner(6), cStroke(G.Math.rgb(50, 50, 65), 1) })
+    }, { cCorner(6), cStroke(G.Math.rgb(83, 17, 35), 1) })
 
     S.modalBtnConfirm = create("TextButton", {
         Size = G.Math.ud2(0.47, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(210, 45, 45),
+        BackgroundColor3 = G.Math.rgb(125, 20, 42),
         Text = getText("modalBtnConfirm"),
         TextColor3 = G.Math.rgb(255, 255, 255),
         Font = Enum.Font.GothamBold,
@@ -1361,7 +1361,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
         local btn = create("TextButton", {
             Size = G.Math.ud2(0.9, 0, 0, 34),
-            BackgroundColor3 = G.Math.rgb(28, 28, 34),
+            BackgroundColor3 = G.Math.rgb(32, 8, 15),
             BackgroundTransparency = 1,
             Text = getText(tabKey),
             TextColor3 = G.Math.rgb(140, 140, 155),
@@ -1394,7 +1394,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                 end
             end
             page.Visible = true
-            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(40, 40, 50), BackgroundTransparency = 0}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(58, 12, 24), BackgroundTransparency = 0}):Play()
         end)
 
         return page
@@ -1461,13 +1461,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local btn = create("TextButton", {
             Name = "Toggle_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
-            BackgroundColor3 = G.Math.rgb(22, 22, 28),
+            BackgroundColor3 = G.Math.rgb(24, 7, 12),
             AutoButtonColor = false,
             Text = "",
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(isOn and G.Math.rgb(65, 65, 80) or G.Math.rgb(42, 42, 52), 1) })
+        }, { cCorner(8), cStroke(isOn and G.Math.rgb(115, 23, 48) or G.Math.rgb(65, 13, 27), 1) })
 
         local label = create("TextLabel", {
             Name = "BtnLabel",
@@ -1490,7 +1490,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "Track",
             Size = G.Math.ud2(0, 34, 0, 18),
             Position = G.Math.ud2(1, -44, 0.5, -9),
-            BackgroundColor3 = isOn and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50),
+            BackgroundColor3 = isOn and G.Math.rgb(145, 24, 50) or G.Math.rgb(58, 12, 24),
             ZIndex = 8,
             Parent = btn
         }, { cCorner(9) })
@@ -1499,7 +1499,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "Dot",
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = isOn and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-            BackgroundColor3 = isOn and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165),
+            BackgroundColor3 = isOn and G.Math.rgb(14, 5, 8) or G.Math.rgb(145, 45, 65),
             ZIndex = 9,
             Parent = switchTrack
         }, { cCorner(7) })
@@ -1507,17 +1507,17 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local stroke = btn:FindFirstChildOfClass("UIStroke")
 
         local function updateVisual(state)
-            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50)}):Play()
+            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and G.Math.rgb(145, 24, 50) or G.Math.rgb(58, 12, 24)}):Play()
             G.Services.TweenService:Create(switchDot, G.Math.tw(0.16, Enum.EasingStyle.Quad), {
                 Position = state and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-                BackgroundColor3 = state and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165)
+                BackgroundColor3 = state and G.Math.rgb(14, 5, 8) or G.Math.rgb(145, 45, 65)
             }):Play()
             G.Services.TweenService:Create(label, G.Math.tw(0.16), {
                 TextColor3 = state and G.Math.rgb(255, 255, 255) or G.Math.rgb(200, 200, 215)
             }):Play()
             if stroke then
                 G.Services.TweenService:Create(stroke, G.Math.tw(0.16), {
-                    Color = state and G.Math.rgb(75, 75, 95) or G.Math.rgb(42, 42, 52)
+                    Color = state and G.Math.rgb(130, 27, 54) or G.Math.rgb(65, 13, 27)
                 }):Play()
             end
         end
@@ -1527,9 +1527,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(32, 32, 40)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(43, 10, 19)}):Play()
             task.delay(0.1, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(22, 22, 28)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 7, 12)}):Play()
             end)
 
             states[key] = not states[key]
@@ -1547,11 +1547,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local cont = create("Frame", {
             Name = "Slider_" .. key,
             Size = G.Math.ud2(0.98, 0, 0, 52),
-            BackgroundColor3 = G.Math.rgb(22, 22, 28),
+            BackgroundColor3 = G.Math.rgb(24, 7, 12),
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(G.Math.rgb(42, 42, 52), 1) })
+        }, { cCorner(8), cStroke(G.Math.rgb(65, 13, 27), 1) })
 
         local lbl = create("TextLabel", {
             Name = "Title",
@@ -1574,7 +1574,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "ValueInput",
             Size = G.Math.ud2(0, 48, 0, 18),
             Position = G.Math.ud2(1, -58, 0, 5),
-            BackgroundColor3 = G.Math.rgb(32, 32, 40),
+            BackgroundColor3 = G.Math.rgb(43, 10, 19),
             Text = tostring(states[key]),
             TextColor3 = G.Math.rgb(255, 255, 255),
             Font = Enum.Font.GothamBold,
@@ -1588,7 +1588,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "DecBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(0, 8, 0, 25),
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = G.Math.rgb(35, 9, 16),
             Text = "—",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1596,13 +1596,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(4), cStroke(G.Math.rgb(75, 15, 31), 1) })
 
         local incBtn = create("TextButton", {
             Name = "IncBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(1, -32, 0, 25),
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = G.Math.rgb(35, 9, 16),
             Text = "+",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1610,7 +1610,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(4), cStroke(G.Math.rgb(75, 15, 31), 1) })
 
         local hitZone = create("TextButton", {
             Name = "SlideHitZone",
@@ -1627,7 +1627,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "TrackVisual",
             Size = G.Math.ud2(1, 0, 0, 6),
             Position = G.Math.ud2(0, 0, 0.5, -3),
-            BackgroundColor3 = G.Math.rgb(14, 14, 18),
+            BackgroundColor3 = G.Math.rgb(10, 4, 7),
             BorderSizePixel = 0,
             ZIndex = 8,
             Parent = hitZone
@@ -1637,7 +1637,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local fill = create("Frame", {
             Name = "Fill",
             Size = G.Math.ud2(fillPct, 0, 1, 0),
-            BackgroundColor3 = G.Math.rgb(240, 240, 250),
+            BackgroundColor3 = G.Math.rgb(235, 220, 226),
             ZIndex = 9,
             Parent = slideTrack
         }, { cCorner(3) })
@@ -1654,14 +1654,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
         decBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] - step, true)
-            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
+            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(75, 15, 31)}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(35, 9, 16)}):Play() end)
         end)
 
         incBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] + step, true)
-            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
+            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(75, 15, 31)}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(35, 9, 16)}):Play() end)
         end)
 
         valBox.FocusLost:Connect(function()
@@ -1707,7 +1707,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Position = G.Math.ud2(0, 7, 0, 2),
             BackgroundTransparency = 1,
             Text = getText(key),
-            TextColor3 = G.Math.rgb(240, 240, 250),
+            TextColor3 = G.Math.rgb(235, 220, 226),
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextScaled = true,
@@ -1719,20 +1719,20 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Name = "Action_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
             Text = "",
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = G.Math.rgb(35, 9, 16),
             AutoButtonColor = false,
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(G.Math.rgb(48, 48, 60), 1), label })
+        }, { cCorner(8), cStroke(G.Math.rgb(82, 16, 34), 1), label })
 
         S.localizedLabels[#S.localizedLabels + 1] = {instance = label, key = key}
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(65, 65, 80)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(115, 23, 48)}):Play()
             task.delay(0.12, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(35, 9, 16)}):Play()
             end)
             if cb then cb() end
         end)
@@ -1787,13 +1787,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Size = G.Math.ud2(0, cardW * 0.8, 0, cardH * 0.8),
             Position = G.Math.ud2(0.5, 0, 0.5, 0),
             AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundColor3 = G.Math.rgb(14, 14, 18),
+            BackgroundColor3 = G.Math.rgb(10, 4, 7),
             ZIndex = 61,
             ClipsDescendants = true,
             Parent = overlay
         }, {
             cCorner(12),
-            cStroke(G.Math.rgb(65, 65, 80), 1.5)
+            cStroke(G.Math.rgb(115, 23, 48), 1.5)
         })
         makeDraggable(card)
 
@@ -1814,7 +1814,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local closeBtn = create("TextButton", {
             Size = G.Math.ud2(0, 26, 0, 26),
             Position = G.Math.ud2(1, -38, 0.5, -13),
-            BackgroundColor3 = G.Math.rgb(24, 24, 30),
+            BackgroundColor3 = G.Math.rgb(29, 8, 14),
             Text = "X",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1822,12 +1822,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             AutoButtonColor = false,
             ZIndex = 63,
             Parent = topBar
-        }, { cCorner(6), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(6), cStroke(G.Math.rgb(75, 15, 31), 1) })
 
         local scroll = create("ScrollingFrame", {
             Size = G.Math.ud2(1, -24, 1, -96),
             Position = G.Math.ud2(0, 12, 0, 44),
-            BackgroundColor3 = G.Math.rgb(18, 18, 24),
+            BackgroundColor3 = G.Math.rgb(14, 5, 8),
             ScrollBarThickness = 3,
             CanvasSize = G.Math.ud2(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -1835,7 +1835,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             Parent = card
         }, {
             cCorner(8),
-            cStroke(G.Math.rgb(40, 40, 50), 1),
+            cStroke(G.Math.rgb(58, 12, 24), 1),
             create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 6)}),
             create("UIPadding", {PaddingTop = G.Math.ud(0, 8), PaddingBottom = G.Math.ud(0, 8), PaddingLeft = G.Math.ud(0, 8), PaddingRight = G.Math.ud(0, 8)})
         })
@@ -1845,7 +1845,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             create("Frame", {
                 Size = G.Math.ud2(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
-                BackgroundColor3 = G.Math.rgb(22, 22, 28),
+                BackgroundColor3 = G.Math.rgb(24, 7, 12),
                 ZIndex = 63,
                 Parent = scroll
             }, {
@@ -1869,14 +1869,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local okBtn = create("TextButton", {
             Size = G.Math.ud2(1, -24, 0, 32),
             Position = G.Math.ud2(0, 12, 1, -42),
-            BackgroundColor3 = G.Math.rgb(32, 32, 42),
+            BackgroundColor3 = G.Math.rgb(43, 10, 19),
             Text = (states.language == "Russian") and "Понятно!" or "Got it!",
             TextColor3 = G.Math.rgb(255, 255, 255),
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             ZIndex = 63,
             Parent = card
-        }, { cCorner(6), cStroke(G.Math.rgb(60, 60, 75), 1) })
+        }, { cCorner(6), cStroke(G.Math.rgb(100, 20, 42), 1) })
 
         local function closeModal()
             local tw = G.Services.TweenService:Create(overlay, G.Math.tw(0.18), {BackgroundTransparency = 1})
@@ -2021,7 +2021,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
     local langBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(32, 32, 40),
+        BackgroundColor3 = G.Math.rgb(43, 10, 19),
         Text = getText("langBtn"),
         TextColor3 = G.Math.rgb(255, 255, 255),
         Font = Enum.Font.GothamBold,
@@ -2031,11 +2031,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         ClipsDescendants = true,
         ZIndex = 7,
         Parent = setRow1
-    }, {cCorner(8), cStroke(G.Math.rgb(50, 50, 65), 1), cTextConstraint(9, 12)})
+    }, {cCorner(8), cStroke(G.Math.rgb(83, 17, 35), 1), cTextConstraint(9, 12)})
 
     local keybindBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = G.Math.rgb(29, 8, 14),
         Text = getText("menuKeyBtn") .. "[" .. tostring(states.menuKey) .. "]",
         TextColor3 = G.Math.rgb(220, 220, 235),
         Font = Enum.Font.GothamBold,
@@ -2045,11 +2045,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         ClipsDescendants = true,
         ZIndex = 7,
         Parent = setRow2
-    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
+    }, {cCorner(8), cStroke(G.Math.rgb(75, 15, 31), 1), cTextConstraint(9, 12)})
 
     local changelogBtn = create("TextButton", {
         Size = G.Math.ud2(0.98, 0, 0, 34),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = G.Math.rgb(29, 8, 14),
         Text = getText("btnViewChangelog"),
         TextColor3 = G.Math.rgb(230, 230, 245),
         Font = Enum.Font.GothamBold,
@@ -2060,7 +2060,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         LayoutOrder = 4,
         ZIndex = 7,
         Parent = pageSettings
-    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
+    }, {cCorner(8), cStroke(G.Math.rgb(75, 15, 31), 1), cTextConstraint(9, 12)})
     changelogBtn.MouseButton1Click:Connect(showChangelogModal)
 
     local isListeningKey = false
@@ -2168,7 +2168,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         S.currentActiveTabBtn = S.TabBtns[1].instance
         G.Services.TweenService:Create(S.TabBtns[1].instance, G.Math.tw(0.2), {
             TextColor3 = G.Math.rgb(255, 255, 255),
-            BackgroundColor3 = G.Math.rgb(40, 40, 50),
+            BackgroundColor3 = G.Math.rgb(58, 12, 24),
             BackgroundTransparency = 0
         }):Play()
     end
