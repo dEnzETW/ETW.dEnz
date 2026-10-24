@@ -1,5 +1,4 @@
--- ETWDRAMA BOLD | Cyan Neon Transparent theme
--- Theme-only edit: cyan palette and glass-like panel transparency.
+
 --aislop warning, but i dont care about it 
 
 
@@ -71,7 +70,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 15
+    tpDelay = 0.05
 }
 
 local LOCALIZATION = {
@@ -120,6 +119,7 @@ local LOCALIZATION = {
         -- Функции: Бой
         toggleAntiRagdoll = "Anti-Ragdoll (No Fall)",
         toggleAntiGiant = "Auto-Dodge Giants",
+
         
         -- Функции: Движение
         toggleFly = "Flight Mode (Fly)",
@@ -321,7 +321,7 @@ local function executeSell()
 end
 
 local GROUND_KEYWORDS = {
-    "ground", "grass", "dirt", "soil", "sand", "floor", 
+    "ground", "grass", "dirt", "soil", "sand", "floor",
     "road", "path", "terrain", "base", "plate", "mud", "earth"
 }
 
@@ -339,7 +339,7 @@ local GROUND_MATERIALS = {
 
 local function isGroundPart(part)
     if not part or not part:IsA("BasePart") then return false end
-    
+
     -- 1. Проверка по валидному материалу
     if part.Material and GROUND_MATERIALS[part.Material] then
         return true
@@ -361,11 +361,39 @@ local function isGroundPart(part)
     return false
 end
 
-local function getRandomEdiblePart()
-    local map = Workspace:FindFirstChild("Map")
-    if not map then return nil end
+-- Multi-map lookup: prefer Workspace.Map, but recover if a game switches
+-- map folders/models or streams the map under a different container.
+local function getActiveMapRoots()
+    local roots = {}
+    local seen = {}
+    local function add(root)
+        if root and root ~= player.Character and not seen[root] then
+            seen[root] = true
+            table.insert(roots, root)
+        end
+    end
 
-    local allDescendants = map:GetDescendants()
+    add(Workspace:FindFirstChild("Map"))
+    for _, child in ipairs(Workspace:GetChildren()) do
+        local n = string.lower(child.Name)
+        if child ~= player.Character and (n == "maps" or n:find("map") or n:find("world") or n:find("stage") or n:find("chunk")) then
+            add(child)
+        end
+    end
+    -- Fallback for games whose active map is directly parented to Workspace.
+    if #roots == 0 then add(Workspace) end
+    return roots
+end
+
+local function getRandomEdiblePart()
+    local allDescendants = {}
+    for _, root in ipairs(getActiveMapRoots()) do
+        for _, obj in ipairs(root:GetDescendants()) do
+            if obj ~= player.Character and not (player.Character and obj:IsDescendantOf(player.Character)) then
+                table.insert(allDescendants, obj)
+            end
+        end
+    end
     if #allDescendants == 0 then return nil end
 
     -- Считываем текущий размер (из Character или leaderstats)
@@ -381,8 +409,9 @@ local function getRandomEdiblePart()
     -- 1. Быстрый случайный поиск (O(1) оптимизация для мобилок)
     for _ = 1, 40 do
         local randomObj = allDescendants[math.random(1, #allDescendants)]
-        if randomObj:IsA("BasePart") 
-            and randomObj.Name ~= "Bedrock" 
+        if randomObj:IsA("BasePart")
+            and not (player.Character and randomObj:IsDescendantOf(player.Character))
+            and randomObj.Name ~= "Bedrock"
             and randomObj.Name ~= "Barrier" 
             and randomObj.CanCollide 
             and randomObj.Transparency < 0.8 
@@ -405,8 +434,9 @@ local function getRandomEdiblePart()
     -- 2. Если за 40 случайных попыток земля не выпала, ищем ближайший блок земли
     if prioritizeGround then
         for _, obj in ipairs(allDescendants) do
-            if obj:IsA("BasePart") 
-                and obj.Name ~= "Bedrock" 
+            if obj:IsA("BasePart")
+                and not (player.Character and obj:IsDescendantOf(player.Character))
+                and obj.Name ~= "Bedrock"
                 and obj.Name ~= "Barrier" 
                 and obj.CanCollide 
                 and obj.Transparency < 0.8 
@@ -449,10 +479,13 @@ local function getPrioritizedDrops()
     local drops = {}
     local myPos = HumanoidRootPart.Position
 
-    for _, obj in ipairs(G.Services.Workspace:GetChildren()) do
+    -- Drops may be nested in folders/models, especially after map transitions.
+
+    for _, obj in ipairs(G.Services.Workspace:GetDescendants()) do
         if canCollect(obj) then
             local dist = (obj.Position - myPos).Magnitude
-            local timeLeftVal = obj:FindFirstChild("TimeLeft") and obj.TimeLeft.Value or 15
+            local timeLeftObj = obj:FindFirstChild("TimeLeft")
+            local timeLeftVal = timeLeftObj and timeLeftObj.Value or 15
             table.insert(drops, {
                 Part = obj,
                 Dist = dist,
@@ -568,6 +601,10 @@ local function setSmartFade(targetFrame, isFading)
         else
             local base = targetFrame:GetAttribute("BaseBgTrans") or 0
             G.Services.TweenService:Create(targetFrame, tweenInfo, {BackgroundTransparency = base}):Play()
+        end
+    end)
+end
+
             targetFrame:SetAttribute("BaseBgTrans", nil)
         end
     end)
@@ -705,7 +742,7 @@ local NOTIFY_COLORS = {
     Warning = G.Math.rgb(220, 220, 230),
     Error = G.Math.rgb(255, 75, 75),
     Background = G.Math.rgb(18, 18, 22),
-    Stroke = G.Math.rgb(0, 225, 255)
+    Stroke = G.Math.rgb(50, 50, 60)
 }
 
 local activeToastList = {}
@@ -808,6 +845,7 @@ local function showNotification(message, nType, title, duration)
             TextXAlignment = Enum.TextXAlignment.Left
         }),
         create("Frame", {
+
             Name = "TimerBar",
             Size = G.Math.ud2(1, 0, 0, 2),
             Position = G.Math.ud2(0, 0, 1, -2),
@@ -880,44 +918,29 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-local isPhone = vp.X < 600
-
--- Compact layout: noticeably smaller than the original panel, with responsive
--- sizing so labels, controls, and touch targets remain usable on phones.
-local initialWidth = math.min(
-    vp.X * (isPhone and 0.72 or 0.48),
-    isPhone and 340 or 500
-)
-
-local initialHeight = math.min(
-    vp.Y * (isPhone and 0.52 or 0.54),
-    isPhone and 360 or 420
-)
-
-initialWidth = math.max(initialWidth, math.min(vp.X - 16, 280))
-initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
+    local initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
+    local initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
         Size = G.Math.ud2(0, initialWidth, 0, initialHeight),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(4, 20, 27),
-        BackgroundTransparency = 0.22,
+        BackgroundColor3 = G.Math.rgb(14, 14, 18),
         Active = true,
         ClipsDescendants = true,
         Parent = S.ScreenGui
     }, {
         cCorner(14),
-        cStroke(G.Math.rgb(0, 225, 255), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(280, 240), MaxSize = Vector2.new(520, 440)})
+        cStroke(G.Math.rgb(50, 50, 60), 1.5),
+        create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
     })
 
     S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
 
     S.TopBar = create("Frame", {
         Name = "TopBar",
-        Size = G.Math.ud2(1, 0, 0, 36),
+        Size = G.Math.ud2(1, 0, 0, 42),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Parent = S.MainFrame
@@ -926,7 +949,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Size = G.Math.ud2(0, 260, 1, 0),
             Position = G.Math.ud2(0, 15, 0, 0),
             BackgroundTransparency = 1,
-            Text = "ETWDRAMA",
+            Text = "HUBHUBHUB :P",
             TextColor3 = G.Math.rgb(255, 255, 255),
             Font = Enum.Font.GothamBlack,
             TextSize = 13,
@@ -939,40 +962,41 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Name = "CloseBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -36, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(0, 55, 68),
+        BackgroundColor3 = G.Math.rgb(24, 24, 30),
         Text = "X",
-        TextColor3 = G.Math.rgb(225, 250, 255),
+        TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
+
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(0, 190, 220), 1) })
+    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
 
     S.minBtn = create("TextButton", {
         Name = "MinBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -70, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(0, 55, 68),
+        BackgroundColor3 = G.Math.rgb(24, 24, 30),
         Text = "—",
-        TextColor3 = G.Math.rgb(225, 250, 255),
+        TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(0, 190, 220), 1) })
+    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
 
     S.closeBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(0, 225, 255), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(200, 45, 45), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
     end)
     S.closeBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(0, 55, 68), TextColor3 = G.Math.rgb(225, 250, 255)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
     end)
 
     S.minBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(0, 190, 220), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(45, 45, 55), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
     end)
     S.minBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(0, 55, 68), TextColor3 = G.Math.rgb(225, 250, 255)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
     end)
 
     S.ResizeGrip = create("ImageButton", {
@@ -1004,7 +1028,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 280, 520), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 240, 440))
+            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 450, 900), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 300, 650))
         end
     end)
 
@@ -1017,17 +1041,16 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.Sidebar = create("Frame", {
         Name = "Sidebar",
-        Size = G.Math.ud2(0, 108, 1, -36),
-        Position = G.Math.ud2(0, 0, 0, 36),
-        BackgroundColor3 = G.Math.rgb(4, 28, 36),
-        BackgroundTransparency = 0.28,
+        Size = G.Math.ud2(0, 130, 1, -42),
+        Position = G.Math.ud2(0, 0, 0, 42),
+        BackgroundColor3 = G.Math.rgb(20, 20, 24),
         BorderSizePixel = 0,
         ZIndex = 5,
         Parent = S.MainFrame
     }, {
         cCorner(14),
-        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = G.Math.rgb(4, 28, 36), BorderSizePixel = 0}),
-        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = G.Math.rgb(4, 28, 36), BorderSizePixel = 0})
+        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0}),
+        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0})
     })
 
     S.SidebarContent = create("Frame", {
@@ -1043,10 +1066,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.ContentBackdrop = create("Frame", {
         Name = "ContentBackdrop",
-        Size = G.Math.ud2(1, -108, 1, -36),
-        Position = G.Math.ud2(0, 108, 0, 36),
-        BackgroundColor3 = G.Math.rgb(4, 25, 33),
-        BackgroundTransparency = 0.32,
+        Size = G.Math.ud2(1, -130, 1, -42),
+        Position = G.Math.ud2(0, 130, 0, 42),
+        BackgroundColor3 = G.Math.rgb(16, 16, 20),
         BorderSizePixel = 0,
         ZIndex = 4,
         Parent = S.MainFrame
@@ -1054,8 +1076,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.Content = create("Frame", {
         Name = "Content",
-        Size = G.Math.ud2(1, -108, 1, -36),
-        Position = G.Math.ud2(0, 108, 0, 36),
+        Size = G.Math.ud2(1, -130, 1, -42),
+        Position = G.Math.ud2(0, 130, 0, 42),
         BackgroundTransparency = 1,
         ZIndex = 5,
         Parent = S.MainFrame
@@ -1065,13 +1087,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Name = "SearchBarFrame",
         Size = G.Math.ud2(1, -20, 0, 32),
         Position = G.Math.ud2(0, 10, 0, 6),
-        BackgroundColor3 = G.Math.rgb(5, 38, 48),
-        BackgroundTransparency = 0.28,
+
+        BackgroundColor3 = G.Math.rgb(22, 22, 28),
         ZIndex = 6,
         Parent = S.Content
     }, {
         cCorner(6),
-        cStroke(G.Math.rgb(0, 220, 255), 1),
+        cStroke(G.Math.rgb(40, 40, 50), 1),
         create("ImageLabel", {
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = G.Math.ud2(0, 9, 0.5, -7),
@@ -1079,7 +1101,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Image = "rbxassetid://3926305904",
             ImageRectOffset = Vector2.new(964, 324),
             ImageRectSize = Vector2.new(36, 36),
-            ImageColor3 = G.Math.rgb(150, 250, 255)
+            ImageColor3 = G.Math.rgb(140, 140, 155)
         })
     })
 
@@ -1090,7 +1112,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         PlaceholderText = getText("searchPlaceholder"),
         Text = "",
         TextColor3 = G.Math.rgb(240, 240, 250),
-        PlaceholderColor3 = G.Math.rgb(130, 205, 215),
+        PlaceholderColor3 = G.Math.rgb(120, 120, 135),
         Font = Enum.Font.GothamMedium,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1103,9 +1125,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Name = "ClearSearchBtn",
         Size = G.Math.ud2(0, 22, 0, 22),
         Position = G.Math.ud2(1, -26, 0.5, -11),
-        BackgroundColor3 = G.Math.rgb(0, 85, 102),
+        BackgroundColor3 = G.Math.rgb(32, 32, 40),
         Text = "✖",
-        TextColor3 = G.Math.rgb(130, 225, 235),
+        TextColor3 = G.Math.rgb(160, 160, 175),
         Font = Enum.Font.GothamBold,
         TextSize = 10,
         Visible = false,
@@ -1120,63 +1142,38 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         S.applySearchFilter("")
     end)
 
-    -- Floating circular dEnZ button: built entirely from Roblox GUI text/shapes;
-    -- no local image file or uploaded image asset is required.
     S.MiniButton = create("TextButton", {
-        Name = "dEnZPanelButton",
-        Size = G.Math.ud2(0, 42, 0, 42),
-        Position = G.Math.ud2(0, 18, 0.5, -21),
-        BackgroundColor3 = G.Math.rgb(4, 20, 27),
-        BackgroundTransparency = 0.12,
-        Text = "dEnz",
-        TextColor3 = G.Math.rgb(191, 239, 255),
-        TextStrokeColor3 = G.Math.rgb(30, 100, 125),
-        TextStrokeTransparency = 0.45,
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextScaled = true,
-        AutoButtonColor = false,
+        Size = G.Math.ud2(0, 48, 0, 48),
+        Position = G.Math.ud2(0, 20, 0.5, -24),
+        BackgroundColor3 = G.Math.rgb(18, 18, 24),
+        Text = "",
         Visible = false,
-        ZIndex = 40,
         Parent = S.ScreenGui
     }, {
-        cCorner(21),
-        cStroke(G.Math.rgb(0, 225, 255), 2),
-        cTextConstraint(10, 13),
-        create("UIGradient", {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, G.Math.rgb(0, 65, 80)),
-                ColorSequenceKeypoint.new(0.5, G.Math.rgb(4, 30, 39)),
-                ColorSequenceKeypoint.new(1, G.Math.rgb(0, 125, 150))
-            }),
-            Rotation = 45
+        cCorner(12),
+        cStroke(G.Math.rgb(70, 70, 85), 1.5),
+        create("ImageLabel", {
+            Size = G.Math.ud2(1, -14, 1, -14),
+            Position = G.Math.ud2(0, 7, 0, 7),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://7059346373",
+            ImageColor3 = G.Math.rgb(240, 240, 245),
+            ScaleType = Enum.ScaleType.Fit
         })
     })
     makeDraggable(S.MiniButton)
-    S.MiniButton.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
-            BackgroundTransparency = 0.02,
-            TextColor3 = G.Math.rgb(225, 247, 255)
-        }):Play()
-    end)
-    S.MiniButton.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
-            BackgroundTransparency = 0.12,
-            TextColor3 = G.Math.rgb(191, 239, 255)
-        }):Play()
-    end)
 
     S.wmFrame = create("Frame", {
         Name = "Watermark",
         Size = G.Math.ud2(0, 260, 0, 28),
         Position = G.Math.ud2(0.5, -130, 0, 10),
-        BackgroundColor3 = G.Math.rgb(4, 20, 27),
+        BackgroundColor3 = G.Math.rgb(14, 14, 18),
         BackgroundTransparency = 0.15,
         Visible = states.watermark,
         Parent = S.ScreenGui
     }, {
         cCorner(8),
-        cStroke(G.Math.rgb(0, 160, 190), 1.2),
+        cStroke(G.Math.rgb(60, 60, 75), 1.2),
         create("TextLabel", {
             Name = "StatsTxt",
             Size = G.Math.ud2(1, 0, 1, 0),
@@ -1204,13 +1201,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Size = G.Math.ud2(0, 290, 0, 145),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(5, 35, 45),
+        BackgroundColor3 = G.Math.rgb(20, 20, 26),
         ZIndex = 51,
         Parent = S.ModalOverlay
     }, {
         cCorner(10),
-        cStroke(G.Math.rgb(0, 160, 190), 1.5),
+        cStroke(G.Math.rgb(60, 60, 75), 1.5),
         create("TextLabel", {
+
             Name = "Title",
             Size = G.Math.ud2(1, -20, 0, 24),
             Position = G.Math.ud2(0, 10, 0, 14),
@@ -1247,7 +1245,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.modalBtnCancel = create("TextButton", {
         Size = G.Math.ud2(0.47, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(0, 85, 102),
+        BackgroundColor3 = G.Math.rgb(32, 32, 40),
         Text = getText("modalBtnCancel"),
         TextColor3 = G.Math.rgb(220, 220, 235),
         Font = Enum.Font.GothamBold,
@@ -1258,7 +1256,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.modalBtnConfirm = create("TextButton", {
         Size = G.Math.ud2(0.47, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(125, 32, 59),
+        BackgroundColor3 = G.Math.rgb(210, 45, 45),
         Text = getText("modalBtnConfirm"),
         TextColor3 = G.Math.rgb(255, 255, 255),
         Font = Enum.Font.GothamBold,
@@ -1314,8 +1312,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                 if not S.guiOpen then
                     S.MainFrame.Visible = false
                     S.MiniButton.Visible = true
-                    S.MiniButton.Size = G.Math.ud2(0, 40, 0, 40)
-                    G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.25, Enum.EasingStyle.Back), {Size = G.Math.ud2(0, 52, 0, 52)}):Play()
+                    S.MiniButton.Size = G.Math.ud2(0, 36, 0, 36)
+                    G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.25, Enum.EasingStyle.Back), {Size = G.Math.ud2(0, 48, 0, 48)}):Play()
                 end
             end)
         end
@@ -1331,6 +1329,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         for _, item in ipairs(S.registeredSearchElements) do
             if item.container and item.container.Parent then
                 if query == "" then
+
                     item.container.Visible = true
                 else
                     local match = false
@@ -1377,19 +1376,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     S.createPage = function(internalName, tabKey)
         local page = create("ScrollingFrame", {
             Name = internalName,
-            Size = G.Math.ud2(1, -16, 1, -40),
-            Position = G.Math.ud2(0, 8, 0, 36),
+            Size = G.Math.ud2(1, -20, 1, -44),
+            Position = G.Math.ud2(0, 10, 0, 42),
             BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ScrollBarThickness = 4,
-            ScrollingDirection = Enum.ScrollingDirection.Y,
-            ScrollingEnabled = true,
-            Active = true,
-            ClipsDescendants = true,
+            ScrollBarThickness = 3,
             Visible = false,
-            -- CanvasSize is updated from UIListLayout.AbsoluteContentSize below.
-            -- This is more reliable than AutomaticCanvasSize on different clients.
-            AutomaticCanvasSize = Enum.AutomaticSize.None,
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = G.Math.ud2(0, 0, 0, 0),
             ZIndex = 6,
             Parent = S.Content
@@ -1397,31 +1389,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center}),
             create("UIPadding", {PaddingTop = G.Math.ud(0, 4), PaddingBottom = G.Math.ud(0, 18)})
         })
-
-        local pageLayout = page:FindFirstChildOfClass("UIListLayout")
-        local pagePadding = page:FindFirstChildOfClass("UIPadding")
-        local function refreshPageCanvas()
-            if not page or not page.Parent or not pageLayout then return end
-            local topPad = pagePadding and pagePadding.PaddingTop.Offset or 0
-            local bottomPad = pagePadding and pagePadding.PaddingBottom.Offset or 0
-            local contentHeight = pageLayout.AbsoluteContentSize.Y + topPad + bottomPad + 4
-            page.CanvasSize = G.Math.ud2(0, 0, 0, math.max(contentHeight, page.AbsoluteSize.Y))
-        end
-
-        if pageLayout then
-            pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshPageCanvas)
-        end
-        page:GetPropertyChangedSignal("AbsoluteSize"):Connect(refreshPageCanvas)
-        task.defer(refreshPageCanvas)
-
         S.Pages[internalName] = page
 
         local btn = create("TextButton", {
             Size = G.Math.ud2(0.9, 0, 0, 34),
-            BackgroundColor3 = G.Math.rgb(57, 22, 35),
+            BackgroundColor3 = G.Math.rgb(28, 28, 34),
             BackgroundTransparency = 1,
             Text = getText(tabKey),
-            TextColor3 = G.Math.rgb(150, 250, 255),
+            TextColor3 = G.Math.rgb(140, 140, 155),
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextScaled = true,
@@ -1439,7 +1414,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         end)
         btn.MouseLeave:Connect(function() 
             if S.currentActiveTabBtn ~= btn then 
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = G.Math.rgb(150, 250, 255)}):Play() 
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = G.Math.rgb(140, 140, 155)}):Play() 
             end 
         end)
         btn.MouseButton1Click:Connect(function()
@@ -1447,20 +1422,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             for _, p in pairs(S.Pages) do p.Visible = false end
             for _, b in pairs(S.TabBtns) do
                 if b.instance ~= btn then
-                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(150, 250, 255), BackgroundTransparency = 1}):Play()
+                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(140, 140, 155), BackgroundTransparency = 1}):Play()
                 end
             end
             page.Visible = true
-            -- Recalculate after the page becomes visible and start at the top.
-            task.defer(function()
-                if page and page.Parent then
-                    page.CanvasPosition = Vector2.new(0, 0)
-                    if pageLayout then
-                        refreshPageCanvas()
-                    end
-                end
-            end)
-            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(0, 220, 255), BackgroundTransparency = 0}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(40, 40, 50), BackgroundTransparency = 0}):Play()
         end)
 
         return page
@@ -1471,7 +1437,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Size = G.Math.ud2(0.98, 0, 0, 18),
             BackgroundTransparency = 1,
             Text = "— " .. string.upper(text) .. " —",
-            TextColor3 = G.Math.rgb(130, 205, 215),
+            TextColor3 = G.Math.rgb(120, 120, 135),
             Font = Enum.Font.GothamBold,
             TextSize = 10,
             LayoutOrder = order or 0,
@@ -1484,6 +1450,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     local function updateRowChildren(row, childHeight)
         if not row then return end
         local children = {}
+
         for _, child in ipairs(row:GetChildren()) do
             if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                 table.insert(children, child)
@@ -1527,13 +1494,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local btn = create("TextButton", {
             Name = "Toggle_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
-            BackgroundColor3 = G.Math.rgb(5, 38, 48),
+            BackgroundColor3 = G.Math.rgb(22, 22, 28),
             AutoButtonColor = false,
             Text = "",
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(isOn and G.Math.rgb(145, 43, 72) or G.Math.rgb(42, 42, 52), 1) })
+        }, { cCorner(8), cStroke(isOn and G.Math.rgb(65, 65, 80) or G.Math.rgb(42, 42, 52), 1) })
 
         local label = create("TextLabel", {
             Name = "BtnLabel",
@@ -1556,7 +1523,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "Track",
             Size = G.Math.ud2(0, 34, 0, 18),
             Position = G.Math.ud2(1, -44, 0.5, -9),
-            BackgroundColor3 = isOn and G.Math.rgb(240, 240, 245) or G.Math.rgb(0, 220, 255),
+            BackgroundColor3 = isOn and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50),
             ZIndex = 8,
             Parent = btn
         }, { cCorner(9) })
@@ -1565,7 +1532,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "Dot",
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = isOn and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-            BackgroundColor3 = isOn and G.Math.rgb(4, 25, 33) or G.Math.rgb(160, 75, 100),
+            BackgroundColor3 = isOn and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165),
             ZIndex = 9,
             Parent = switchTrack
         }, { cCorner(7) })
@@ -1573,10 +1540,10 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local stroke = btn:FindFirstChildOfClass("UIStroke")
 
         local function updateVisual(state)
-            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and G.Math.rgb(240, 240, 245) or G.Math.rgb(0, 220, 255)}):Play()
+            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50)}):Play()
             G.Services.TweenService:Create(switchDot, G.Math.tw(0.16, Enum.EasingStyle.Quad), {
                 Position = state and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-                BackgroundColor3 = state and G.Math.rgb(4, 25, 33) or G.Math.rgb(160, 75, 100)
+                BackgroundColor3 = state and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165)
             }):Play()
             G.Services.TweenService:Create(label, G.Math.tw(0.16), {
                 TextColor3 = state and G.Math.rgb(255, 255, 255) or G.Math.rgb(200, 200, 215)
@@ -1593,9 +1560,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(0, 85, 102)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(32, 32, 40)}):Play()
             task.delay(0.1, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(5, 38, 48)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(22, 22, 28)}):Play()
             end)
 
             states[key] = not states[key]
@@ -1606,6 +1573,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         return btn
     end
 
+    end
+
     S.createSlider = function(parent, min, max, default, key, step, cb)
         step = step or 1
         states[key] = G.Math.clamp(default or min, min, max)
@@ -1613,7 +1582,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local cont = create("Frame", {
             Name = "Slider_" .. key,
             Size = G.Math.ud2(0.98, 0, 0, 52),
-            BackgroundColor3 = G.Math.rgb(5, 38, 48),
+            BackgroundColor3 = G.Math.rgb(22, 22, 28),
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
@@ -1640,7 +1609,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "ValueInput",
             Size = G.Math.ud2(0, 48, 0, 18),
             Position = G.Math.ud2(1, -58, 0, 5),
-            BackgroundColor3 = G.Math.rgb(0, 85, 102),
+            BackgroundColor3 = G.Math.rgb(32, 32, 40),
             Text = tostring(states[key]),
             TextColor3 = G.Math.rgb(255, 255, 255),
             Font = Enum.Font.GothamBold,
@@ -1654,7 +1623,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "DecBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(0, 8, 0, 25),
-            BackgroundColor3 = G.Math.rgb(62, 23, 38),
+            BackgroundColor3 = G.Math.rgb(28, 28, 36),
             Text = "—",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1662,13 +1631,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(0, 190, 220), 1) })
+        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
 
         local incBtn = create("TextButton", {
             Name = "IncBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(1, -32, 0, 25),
-            BackgroundColor3 = G.Math.rgb(62, 23, 38),
+            BackgroundColor3 = G.Math.rgb(28, 28, 36),
             Text = "+",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1676,7 +1645,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(0, 190, 220), 1) })
+        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
 
         local hitZone = create("TextButton", {
             Name = "SlideHitZone",
@@ -1693,7 +1662,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "TrackVisual",
             Size = G.Math.ud2(1, 0, 0, 6),
             Position = G.Math.ud2(0, 0, 0.5, -3),
-            BackgroundColor3 = G.Math.rgb(4, 20, 27),
+            BackgroundColor3 = G.Math.rgb(14, 14, 18),
             BorderSizePixel = 0,
             ZIndex = 8,
             Parent = hitZone
@@ -1720,14 +1689,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
         decBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] - step, true)
-            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(0, 190, 220)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(62, 23, 38)}):Play() end)
+            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
         end)
 
         incBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] + step, true)
-            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(0, 190, 220)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(62, 23, 38)}):Play() end)
+            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
         end)
 
         valBox.FocusLost:Connect(function()
@@ -1785,7 +1754,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Name = "Action_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
             Text = "",
-            BackgroundColor3 = G.Math.rgb(62, 23, 38),
+            BackgroundColor3 = G.Math.rgb(28, 28, 36),
             AutoButtonColor = false,
             ClipsDescendants = true,
             ZIndex = 7,
@@ -1796,9 +1765,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(145, 43, 72)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(65, 65, 80)}):Play()
             task.delay(0.12, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(62, 23, 38)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play()
             end)
             if cb then cb() end
         end)
@@ -1844,6 +1813,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             BackgroundTransparency = 1,
             AutoButtonColor = false,
             Text = "",
+
             ZIndex = 60,
             Parent = S.ScreenGui
         })
@@ -1853,13 +1823,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Size = G.Math.ud2(0, cardW * 0.8, 0, cardH * 0.8),
             Position = G.Math.ud2(0.5, 0, 0.5, 0),
             AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundColor3 = G.Math.rgb(4, 20, 27),
+            BackgroundColor3 = G.Math.rgb(14, 14, 18),
             ZIndex = 61,
             ClipsDescendants = true,
             Parent = overlay
         }, {
             cCorner(12),
-            cStroke(G.Math.rgb(145, 43, 72), 1.5)
+            cStroke(G.Math.rgb(65, 65, 80), 1.5)
         })
         makeDraggable(card)
 
@@ -1880,7 +1850,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local closeBtn = create("TextButton", {
             Size = G.Math.ud2(0, 26, 0, 26),
             Position = G.Math.ud2(1, -38, 0.5, -13),
-            BackgroundColor3 = G.Math.rgb(0, 55, 68),
+            BackgroundColor3 = G.Math.rgb(24, 24, 30),
             Text = "X",
             TextColor3 = G.Math.rgb(200, 200, 215),
             Font = Enum.Font.GothamBold,
@@ -1888,12 +1858,12 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             AutoButtonColor = false,
             ZIndex = 63,
             Parent = topBar
-        }, { cCorner(6), cStroke(G.Math.rgb(0, 190, 220), 1) })
+        }, { cCorner(6), cStroke(G.Math.rgb(45, 45, 55), 1) })
 
         local scroll = create("ScrollingFrame", {
             Size = G.Math.ud2(1, -24, 1, -96),
             Position = G.Math.ud2(0, 12, 0, 44),
-            BackgroundColor3 = G.Math.rgb(4, 30, 39),
+            BackgroundColor3 = G.Math.rgb(18, 18, 24),
             ScrollBarThickness = 3,
             CanvasSize = G.Math.ud2(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -1901,7 +1871,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             Parent = card
         }, {
             cCorner(8),
-            cStroke(G.Math.rgb(0, 220, 255), 1),
+            cStroke(G.Math.rgb(40, 40, 50), 1),
             create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 6)}),
             create("UIPadding", {PaddingTop = G.Math.ud(0, 8), PaddingBottom = G.Math.ud(0, 8), PaddingLeft = G.Math.ud(0, 8), PaddingRight = G.Math.ud(0, 8)})
         })
@@ -1911,7 +1881,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             create("Frame", {
                 Size = G.Math.ud2(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
-                BackgroundColor3 = G.Math.rgb(5, 38, 48),
+                BackgroundColor3 = G.Math.rgb(22, 22, 28),
                 ZIndex = 63,
                 Parent = scroll
             }, {
@@ -1935,14 +1905,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local okBtn = create("TextButton", {
             Size = G.Math.ud2(1, -24, 0, 32),
             Position = G.Math.ud2(0, 12, 1, -42),
-            BackgroundColor3 = G.Math.rgb(80, 26, 45),
+            BackgroundColor3 = G.Math.rgb(32, 32, 42),
             Text = (states.language == "Russian") and "Понятно!" or "Got it!",
             TextColor3 = G.Math.rgb(255, 255, 255),
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             ZIndex = 63,
             Parent = card
-        }, { cCorner(6), cStroke(G.Math.rgb(0, 160, 190), 1) })
+        }, { cCorner(6), cStroke(G.Math.rgb(60, 60, 75), 1) })
 
         local function closeModal()
             local tw = G.Services.TweenService:Create(overlay, G.Math.tw(0.18), {BackgroundTransparency = 1})
@@ -1964,6 +1934,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     local pageFarm = S.createPage("Farm", "tabFarm")
     local pageMagnet = S.createPage("Magnet", "tabMagnet")
     local pageVisuals = S.createPage("Visuals", "tabVisuals")
+
     local pageCombat = S.createPage("Combat", "tabCombat")
     local pageMovement = S.createPage("Movement", "tabMovement")
     local pageRewards = S.createPage("Rewards", "tabRewards")
@@ -2087,7 +2058,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     local langBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(0, 85, 102),
+        BackgroundColor3 = G.Math.rgb(32, 32, 40),
         Text = getText("langBtn"),
         TextColor3 = G.Math.rgb(255, 255, 255),
         Font = Enum.Font.GothamBold,
@@ -2101,7 +2072,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     local keybindBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(0, 55, 68),
+        BackgroundColor3 = G.Math.rgb(24, 24, 30),
         Text = getText("menuKeyBtn") .. "[" .. tostring(states.menuKey) .. "]",
         TextColor3 = G.Math.rgb(220, 220, 235),
         Font = Enum.Font.GothamBold,
@@ -2111,11 +2082,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         ClipsDescendants = true,
         ZIndex = 7,
         Parent = setRow2
-    }, {cCorner(8), cStroke(G.Math.rgb(0, 190, 220), 1), cTextConstraint(9, 12)})
+    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
 
     local changelogBtn = create("TextButton", {
         Size = G.Math.ud2(0.98, 0, 0, 34),
-        BackgroundColor3 = G.Math.rgb(0, 55, 68),
+        BackgroundColor3 = G.Math.rgb(24, 24, 30),
         Text = getText("btnViewChangelog"),
         TextColor3 = G.Math.rgb(230, 230, 245),
         Font = Enum.Font.GothamBold,
@@ -2126,7 +2097,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         LayoutOrder = 4,
         ZIndex = 7,
         Parent = pageSettings
-    }, {cCorner(8), cStroke(G.Math.rgb(0, 190, 220), 1), cTextConstraint(9, 12)})
+    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
     changelogBtn.MouseButton1Click:Connect(showChangelogModal)
 
     local isListeningKey = false
@@ -2204,20 +2175,21 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         if not force and newMode == currentLayoutMode then
             return
         end
+
         currentLayoutMode = newMode
 
-        updateRowChildren(farmRow1, 32)
-        updateRowChildren(farmRow2, 32)
-        updateRowChildren(magRow1, 32)
-        updateRowChildren(magRow2, 32)
-        updateRowChildren(visRow1, 32)
-        updateRowChildren(comRow1, 32)
-        updateRowChildren(moveRow1, 32)
-        updateRowChildren(moveRow2, 32)
-        updateRowChildren(moveSliderRow, 44)
-        updateRowChildren(rewRow1, 32)
-        updateRowChildren(setRow1, 30)
-        updateRowChildren(setRow2, 30)
+        updateRowChildren(farmRow1, 38)
+        updateRowChildren(farmRow2, 38)
+        updateRowChildren(magRow1, 38)
+        updateRowChildren(magRow2, 38)
+        updateRowChildren(visRow1, 38)
+        updateRowChildren(comRow1, 38)
+        updateRowChildren(moveRow1, 38)
+        updateRowChildren(moveRow2, 38)
+        updateRowChildren(moveSliderRow, 52)
+        updateRowChildren(rewRow1, 38)
+        updateRowChildren(setRow1, 36)
+        updateRowChildren(setRow2, 36)
 
         if S.SearchBox and S.SearchBox.Text ~= "" then
             S.applySearchFilter(S.SearchBox.Text)
@@ -2234,7 +2206,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         S.currentActiveTabBtn = S.TabBtns[1].instance
         G.Services.TweenService:Create(S.TabBtns[1].instance, G.Math.tw(0.2), {
             TextColor3 = G.Math.rgb(255, 255, 255),
-            BackgroundColor3 = G.Math.rgb(0, 220, 255),
+            BackgroundColor3 = G.Math.rgb(40, 40, 50),
             BackgroundTransparency = 0
         }):Play()
     end
@@ -2257,7 +2229,6 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         local localEat = G.Services.ReplicatedStorage:WaitForChild("LocalEvents"):WaitForChild("Eat")
 
         local lastActivityTime = os.clock()
-        local lastTeleportAt = 0
         local wasFarming = false
 
         -- Функция синхронизации визуального состояния тумблера в GUI
@@ -2324,7 +2295,6 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                     local currentChunkVal = char:FindFirstChild("CurrentChunk")
                     local events = getCharEvents()
 
-                    if hum.Health > 0 and currentChunkVal and events then
                         hum:ChangeState(Enum.HumanoidStateType.Running)
 
                         -- Проверка на полный размер
@@ -2350,9 +2320,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
                         -- Поиск живого объекта на карте (с приоритетом земли)
                         local targetPart, isGround = getRandomEdiblePart()
-                        -- Teleport hanya boleh memulai siklus baru jika chunk sebelumnya
-                        -- sudah selesai dimakan; jangan menyela rangkaian hit/grab/eat.
-                        if targetPart and targetPart.Parent and currentChunkVal.Value == nil and (os.clock() - lastTeleportAt) >= states.tpDelay then
+                        if targetPart and targetPart.Parent then
                             local partPos = targetPart.Position
                             local standPos
                             local lookTarget
@@ -2370,7 +2338,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
-                            lastTeleportAt = os.clock()
+
+                            task.wait(states.tpDelay)
 
                             -- Захват
                             if currentChunkVal.Value == nil then
@@ -2397,41 +2366,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                                 end
                                 task.wait(0.02)
 
-                                -- Две серии makan yang berurutan: 3 gigitan + 3 gigitan.
-                                -- Jeda antar-gigitan 0.5 detik; tanpa jeda tambahan antar-seri.
-                                -- Jika chunk sudah habis, hentikan gigitan dan tunggu konfirmasi.
-                                for series = 1, 2 do
-                                    for bite = 1, 3 do
-                                        if currentChunkVal.Value == nil or not held.Parent then
-                                            break
-                                        end
+                                localEat:Fire()
 
-                                        localEat:Fire()
-
-                                        if bite < 3 then
-                                            task.wait(0.5)
-                                        end
-                                    end
-
-                                    if currentChunkVal.Value == nil or not held.Parent then
-                                        break
-                                    end
-                                end
-
-                                -- Jangan teleport ke target berikutnya sampai chunk sebelumnya
-                                -- benar-benar selesai diproses atau batas waktu tunggu tercapai.
                                 local eatTimeout = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 5 do
+                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 0.35 do
                                     task.wait(0.02)
                                 end
 
-                                if currentChunkVal.Value == nil then
-                                    lastActivityTime = os.clock() -- Кусок съеден
-                                else
-                                    -- Если сервер не подтвердил завершение за 5 сек,
-                                    -- не запускаем следующий teleport поверх текущего куска.
-                                    task.wait(0.1)
-                                end
+                                lastActivityTime = os.clock() -- Успешное действие: кусок съеден!
                             end
 
                             local anchorTimeout = os.clock()
@@ -2473,6 +2415,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0.1, 0)
 
                                     if typeof(firetouchinterest) == "function" then
+
                                         firetouchinterest(hrp, itemPart, 0)
                                         firetouchinterest(hrp, itemPart, 1)
                                     end
@@ -2498,7 +2441,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                 local char = player.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    for _, obj in ipairs(G.Services.Workspace:GetChildren()) do
+                    for _, obj in ipairs(G.Services.Workspace:GetDescendants()) do
                         if canCollect(obj) then
                             if typeof(firetouchinterest) == "function" then
                                 firetouchinterest(hrp, obj, 0)
@@ -2593,6 +2536,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
             if states.playerESP then
                 clearESP()
                 local myChar = player.Character
+
                 local myPhys = myChar and myChar:FindFirstChild("PhysicalSize") and myChar.PhysicalSize.Value or 1
 
                 for _, p in ipairs(G.Services.Players:GetPlayers()) do
@@ -2713,6 +2657,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                     hum.PlatformStand = false
                     hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
+            end
+
             end
             task.wait()
         end
