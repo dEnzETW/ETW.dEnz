@@ -116,6 +116,7 @@ local LOCALIZATION = {
         
         -- Функции: Фарм
         toggleRandomFarm = "Auto farm",
+        toggleAutoEat = "Auto EAT",
         toggleAutoSell = "Auto-Sell on Full Size",
         btnForceSell = "Force Sell Now",
         
@@ -125,7 +126,7 @@ local LOCALIZATION = {
         btnSweepOnce = "1-Click Full Sweep",
         
         -- Функции: Визуал
-        togglePlayerESP = "Player Size Radar (ESP)",
+        togglePlayerESP = "Player Stats ESP",
         
         -- Функции: Бой
         toggleAntiRagdoll = "Anti-Ragdoll (No Fall)",
@@ -189,6 +190,7 @@ local LOCALIZATION = {
         
         -- Функции: Фарм
         toggleRandomFarm = "Авто фарм",
+        toggleAutoEat = "Авто ЕДА",
         toggleAutoSell = "Авто-Продажа при заполнении",
         btnForceSell = "Продать размер сейчас",
         
@@ -198,7 +200,7 @@ local LOCALIZATION = {
         btnSweepOnce = "Собрать все деньги за 1 раз",
         
         -- Функции: Визуал
-        togglePlayerESP = "ESP Игроков (Радар веса)",
+        togglePlayerESP = "ESP статистики игроков",
         
         -- Функции: Бой
         toggleAntiRagdoll = "Анти-Рэгдолл (Без падений)",
@@ -2011,6 +2013,11 @@ local function BuildHubUI()
         states.randomTPFarm = val
         showNotification(getText("toggleRandomFarm") .. ": " .. (val and "ON" or "OFF"), val and "Success" or "Warning")
     end)
+    -- One compact toggle for the tested EAT + GRAB + auto-sell-on-full sequence.
+    local toggleAutoEat = S.createToggle(farmRow1, "toggleAutoEat", function(val)
+        states.autoEat = val
+        showNotification(getText("toggleAutoEat") .. ": " .. (val and "ON" or "OFF"), val and "Success" or "Info")
+    end)
 
     S.createDivider(pageFarm, getText("secSell"), 3)
     local farmRow2 = S.createRow(pageFarm, 38, 4)
@@ -2294,17 +2301,65 @@ local function BuildHubUI()
     end)
 
     -- ==============================================================================
-    -- 1. ПОТОК: РАНДОМ ТП АВТО-ФАРМ С WATCHDOG-ЗАЩИТОЙ (10 СЕК СТУПОР -> 3 СЕК ПЕРЕЗАПУСК)
+    -- AUTO EAT: standalone EAT + GRAB timing matched to rEm Heartbeat pattern.
+    -- Auto-sell is included in the same toggle and uses the existing game helpers.
     -- ==============================================================================
     task.spawn(function()
-        local localGrab = G.Services.ReplicatedStorage:WaitForChild("LocalEvents"):WaitForChild("Grab")
-        local localEat = G.Services.ReplicatedStorage:WaitForChild("LocalEvents"):WaitForChild("Eat")
+        local lastAutoSell = 0
+        local localEvents = G.Services.ReplicatedStorage:FindFirstChild("LocalEvents")
+        local localGrab = localEvents and localEvents:FindFirstChild("Grab")
+        local localEat = localEvents and localEvents:FindFirstChild("Eat")
 
-        local lastActivityTime = os.clock()
-        local wasFarming = false
+        while S.Runtime.running do
+            if states.autoEat then
+                local char = player.Character
+                local events = getCharEvents()
+                local currentChunk = char and char:FindFirstChild("CurrentChunk")
 
-        -- Функция синхронизации визуального состояния тумблера в GUI
-        local function setFarmVisual(state)
+                if char and events then
+                    -- Match rEm's per-Heartbeat approach, but use this managed loop
+                    -- so the feature can be turned off cleanly.
+                    pcall(function()
+                        -- Same event cadence as the standalone rEm-matched test:
+                        -- attempt both Grab and Eat each loop iteration.
+                        if localGrab then
+                            localGrab:Fire()
+                        elseif events.Grab then
+                            events.Grab:FireServer(false, false, false)
+                        end
+
+                        if localEat then
+                            localEat:Fire()
+                        elseif events.Eat then
+                            events.Eat:FireServer()
+                        end
+                    end)
+
+                    -- Sell on full inventory with a small debounce; reuses the existing
+                    -- full-inventory detector and sale routine.
+                    if isInventoryFull() and (os.clock() - lastAutoSell) >= 0.8 then
+                        lastAutoSell = os.clock()
+                        pcall(executeSell)
+                    end
+                end
+                task.wait()
+            else
+                task.wait(0.1)
+            end
+        end
+    end)
+
+    -- ==============================================================================
+    -- TELEPORT-ONLY LOOP: no Grab/Eat calls here.
+    -- Teleports to a new edible target at most once every 10 seconds.
+    -- EAT/GRAB + auto-sell remain handled by the separate Auto EAT toggle.
+    -- ==============================================================================
+    task.spawn(function()
+        local TELEPORT_INTERVAL = 10
+        local lastTeleportAt = 0
+        local wasTeleporting = false
+
+        local function setTeleportVisual(state)
             if S.UI_STORAGE["toggleRandomFarm"] then
                 for _, elem in ipairs(S.UI_STORAGE["toggleRandomFarm"]) do
                     if elem.update then elem.update(state) end
@@ -2314,84 +2369,13 @@ local function BuildHubUI()
 
         while S.Runtime.running do
             if states.randomTPFarm then
-                -- Сброс таймера при включении
-                if not wasFarming then
-                    wasFarming = true
-                    lastActivityTime = os.clock()
-                end
-
-                -- ПРОВЕРКА WATCHDOG: Если 10 секунд ничего не подбиралось и не елось
-                if os.clock() - lastActivityTime >= 10 then
-                    showNotification(
-                        (states.language == "Russian") and "Фарм завис! Перезапуск на 3 сек..." or "Farm stuck! Restarting in 3s...",
-                        "Warning"
-                    )
-
-                    -- 1. Отключаем авто-фарм и визуально переключаем кнопку в OFF
-                    states.randomTPFarm = false
-                    setFarmVisual(false)
-
-                    -- 2. Снимаем физические блокировки и сбрасываем персонажа
+                wasTeleporting = true
+                if os.clock() - lastTeleportAt >= TELEPORT_INTERVAL then
                     local char = player.Character
-                    if char then
-                        local hrp = char:FindFirstChild("HumanoidRootPart")
-                        local hum = char:FindFirstChild("Humanoid")
-                        if hrp then 
-                            hrp.Anchored = false 
-                            hrp.AssemblyLinearVelocity = Vector3.zero
-                        end
-                        if hum then 
-                            hum:ChangeState(Enum.HumanoidStateType.Running) 
-                        end
-                    end
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-                    -- 3. Ждем ровно 3 секунды
-                    task.wait(3.0)
-
-                    -- 4. Включаем авто-фарм обратно и переключаем кнопку в ON
-                    if S.Runtime.running then
-                        states.randomTPFarm = true
-                        setFarmVisual(true)
-                        lastActivityTime = os.clock()
-                        showNotification(
-                            (states.language == "Russian") and "Авто-фарм перезапущен!" or "Auto-Farm resumed!",
-                            "Success"
-                        )
-                    end
-                end
-
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
-                    local hrp = char.HumanoidRootPart
-                    local hum = char.Humanoid
-                    local currentChunkVal = char:FindFirstChild("CurrentChunk")
-                    local events = getCharEvents()
-
-                    if hum.Health > 0 and currentChunkVal and events then
-                        hum:ChangeState(Enum.HumanoidStateType.Running)
-
-                        -- Проверка на полный размер
-                        if states.autoSell and isInventoryFull() then
-                            if currentChunkVal.Value ~= nil then
-                                if events.ChunkLoaded then events.ChunkLoaded:FireServer(currentChunkVal.Value) end
-                                events.Eat:FireServer()
-                                local wEat = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - wEat) < 0.3 do
-                                    task.wait(0.02)
-                                end
-                            end
-
-                            executeSell()
-                            lastActivityTime = os.clock() -- Успешное действие: продажа
-
-                            local wReset = os.clock()
-                            while isInventoryFull() and (os.clock() - wReset) < 1.2 do
-                                task.wait(0.05)
-                            end
-                            task.wait(0.1)
-                        end
-
-                        -- Поиск живого объекта на карте (с приоритетом земли)
+                    if char and hum and hrp and hum.Health > 0 then
                         local targetPart, isGround = getRandomEdiblePart()
                         if targetPart and targetPart.Parent then
                             local partPos = targetPart.Position
@@ -2399,11 +2383,13 @@ local function BuildHubUI()
                             local lookTarget
 
                             if isGround then
-                                -- ТП прямо на землю с наклоном взгляда вниз под ноги
-                                standPos = partPos + Vector3.new(math.random(-1, 1), hum.HipHeight + 0.2, math.random(-1, 1))
+                                standPos = partPos + Vector3.new(
+                                    math.random(-1, 1),
+                                    hum.HipHeight + 0.2,
+                                    math.random(-1, 1)
+                                )
                                 lookTarget = partPos - Vector3.new(0, 2, 0)
                             else
-                                -- ТП перед стеной/зданием
                                 standPos = partPos + Vector3.new(0, hum.HipHeight + 0.5, 2.5)
                                 lookTarget = Vector3.new(partPos.X, standPos.Y, partPos.Z)
                             end
@@ -2411,57 +2397,17 @@ local function BuildHubUI()
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
-
-                            task.wait(states.tpDelay)
-
-                            -- Захват
-                            if currentChunkVal.Value == nil then
-                                localGrab:Fire()
-
-                                local grabTimeout = os.clock()
-                                while currentChunkVal.Value == nil and (os.clock() - grabTimeout) < 0.35 do
-                                    task.wait(0.02)
-                                end
-
-                                if currentChunkVal.Value == nil and events.Grab then
-                                    events.Grab:FireServer(false, false, false)
-                                    task.wait(0.05)
-                                end
-                            end
-
-                            -- Поедание взятого куска
-                            local held = currentChunkVal.Value
-                            if held and held.Parent then
-                                lastActivityTime = os.clock() -- Успешное действие: кусок взят!
-
-                                if events.ChunkLoaded then
-                                    events.ChunkLoaded:FireServer(held)
-                                end
-                                task.wait(0.02)
-
-                                localEat:Fire()
-
-                                local eatTimeout = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 0.35 do
-                                    task.wait(0.02)
-                                end
-
-                                lastActivityTime = os.clock() -- Успешное действие: кусок съеден!
-                            end
-
-                            local anchorTimeout = os.clock()
-                            while hrp.Anchored and (os.clock() - anchorTimeout) < 0.25 do
-                                task.wait(0.02)
-                            end
-                        else
-                            task.wait(0.1)
+                            lastTeleportAt = os.clock()
                         end
                     end
                 end
+                task.wait(0.1)
             else
-                wasFarming = false
+                if wasTeleporting then
+                    wasTeleporting = false
+                end
+                task.wait(0.1)
             end
-            task.wait(0.02)
         end
     end)
 
@@ -2594,59 +2540,146 @@ local function BuildHubUI()
         end
     end)
 
-    -- 7. ПОТОК: РАДАР И ESP ИГРОКОВ
+    -- 7. PLAYER STATS ESP (adapted from rEm.lua; compact labels)
     local ESPFolder = Instance.new("Folder")
-    ESPFolder.Name = "AdminESPFolder"
+    ESPFolder.Name = "PlayerStatsESPFolder"
     ESPFolder.Parent = S.ScreenGui
 
-    local function clearESP()
-        ESPFolder:ClearAllChildren()
+    local espObjects = {}
+
+    local function findPlayerStat(targetPlayer, statName)
+        local variants = {statName, string.gsub(statName, " ", ""), string.gsub(statName, " ", "_")}
+        local function checkObject(obj)
+            for _, variant in ipairs(variants) do
+                if string.lower(obj.Name) == string.lower(variant)
+                    and (obj:IsA("IntValue") or obj:IsA("NumberValue")) then
+                    return obj.Value
+                end
+            end
+            return nil
+        end
+        for _, obj in ipairs(targetPlayer:GetDescendants()) do
+            local value = checkObject(obj)
+            if value ~= nil then return value end
+        end
+        for _, variant in ipairs(variants) do
+            local value = targetPlayer:GetAttribute(variant)
+            if value ~= nil then return value end
+            if targetPlayer.Character then
+                value = targetPlayer.Character:GetAttribute(variant)
+                if value ~= nil then return value end
+            end
+        end
+        local pGui = targetPlayer:FindFirstChild("PlayerGui")
+        if pGui then
+            for _, obj in ipairs(pGui:GetDescendants()) do
+                local value = checkObject(obj)
+                if value ~= nil then return value end
+            end
+        end
+        for _, obj in ipairs(G.Services.ReplicatedStorage:GetDescendants()) do
+            if string.find(string.lower(obj.Name), string.lower(targetPlayer.Name), 1, true) then
+                for _, child in ipairs(obj:GetDescendants()) do
+                    local value = checkObject(child)
+                    if value ~= nil then return value end
+                end
+            end
+        end
+        return "?"
     end
+
+    local function findStatAny(targetPlayer, names)
+        for _, name in ipairs(names) do
+            local value = findPlayerStat(targetPlayer, name)
+            if value ~= "?" then return value end
+        end
+        return "?"
+    end
+
+    local function createPlayerStatsESP(targetPlayer)
+        if targetPlayer == player or espObjects[targetPlayer] then return end
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "rEmPlayerStatsHighlight"
+        highlight.FillColor = G.Math.rgb(0, 225, 245)
+        highlight.OutlineColor = G.Math.rgb(255, 255, 255)
+        highlight.FillTransparency = 0.65
+        highlight.OutlineTransparency = 0
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "rEmPlayerStatsText"
+        billboard.AlwaysOnTop = true
+        billboard.Size = UDim2.new(0, 190, 0, 76)
+        billboard.StudsOffset = Vector3.new(0, 3.2, 0)
+
+        local label = Instance.new("TextLabel")
+        label.Name = "Stats"
+        label.Parent = billboard
+        label.Size = UDim2.fromScale(1, 1)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = G.Math.rgb(255, 255, 255)
+        label.TextStrokeTransparency = 0
+        label.TextStrokeColor3 = G.Math.rgb(0, 0, 0)
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 10
+        label.TextWrapped = true
+        label.TextYAlignment = Enum.TextYAlignment.Bottom
+
+        local playerIndex = 0
+        for _, otherPlayer in ipairs(G.Services.Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.UserId <= targetPlayer.UserId then
+                playerIndex += 1
+            end
+        end
+        billboard.StudsOffset = Vector3.new(0, 3.2 + ((playerIndex % 4) * 0.8), 0)
+
+        espObjects[targetPlayer] = {highlight = highlight, billboard = billboard, label = label}
+    end
+
+    local function removePlayerStatsESP(targetPlayer)
+        local entry = espObjects[targetPlayer]
+        if not entry then return end
+        entry.highlight:Destroy()
+        entry.billboard:Destroy()
+        espObjects[targetPlayer] = nil
+    end
+
+    for _, targetPlayer in ipairs(G.Services.Players:GetPlayers()) do
+        createPlayerStatsESP(targetPlayer)
+    end
+    G.Services.Players.PlayerAdded:Connect(createPlayerStatsESP)
+    G.Services.Players.PlayerRemoving:Connect(removePlayerStatsESP)
 
     task.spawn(function()
         while S.Runtime.running do
-            if states.playerESP then
-                clearESP()
-                local myChar = player.Character
-                local myPhys = myChar and myChar:FindFirstChild("PhysicalSize") and myChar.PhysicalSize.Value or 1
-
-                for _, p in ipairs(G.Services.Players:GetPlayers()) do
-                    if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        local targetChar = p.Character
-                        local targetHum = targetChar:FindFirstChild("Humanoid")
-                        local targetPhys = targetChar:FindFirstChild("PhysicalSize") and targetChar.PhysicalSize.Value or 1
-
-                        if targetHum and targetHum.Health > 0 then
-                            local bg = Instance.new("BillboardGui")
-                            bg.Name = p.Name .. "_ESP"
-                            bg.Adornee = targetChar.HumanoidRootPart
-                            bg.Size = UDim2.new(0, 100, 0, 30)
-                            bg.AlwaysOnTop = true
-                            bg.Parent = ESPFolder
-
-                            local txt = Instance.new("TextLabel")
-                            txt.Size = UDim2.new(1, 0, 1, 0)
-                            txt.BackgroundTransparency = 1
-                            txt.Font = Enum.Font.GothamBold
-                            txt.TextSize = 11
-
-                            if targetPhys < myPhys then
-                                txt.TextColor3 = Color3.fromRGB(0, 255, 120)
-                                txt.Text = p.Name .. " [" .. getText("espEdible") .. "]\nWeight: " .. math.floor(targetPhys * 10) / 10
-                            else
-                                txt.TextColor3 = Color3.fromRGB(255, 60, 60)
-                                txt.Text = p.Name .. " [" .. getText("espDanger") .. "]\nWeight: " .. math.floor(targetPhys * 10) / 10
-                            end
-                            txt.Parent = bg
-                        end
+            for targetPlayer, entry in pairs(espObjects) do
+                if targetPlayer.Parent ~= G.Services.Players then
+                    removePlayerStatsESP(targetPlayer)
+                elseif states.playerESP then
+                    local character = targetPlayer.Character
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    if character and root then
+                        entry.highlight.Parent = character
+                        entry.billboard.Parent = root
+                        local sizeVal = findStatAny(targetPlayer, {"Size"})
+                        local maxVal = findStatAny(targetPlayer, {"MaxSize", "Max Size", "Max", "Capacity"})
+                        local multiVal = findStatAny(targetPlayer, {"Size Multiplier", "Multiplier", "Multi"})
+                        local eatVal = findStatAny(targetPlayer, {"eat speed", "eat level"})
+                        local hum = character:FindFirstChildOfClass("Humanoid")
+                        local walkSpeed = hum and math.floor(hum.WalkSpeed) or 16
+                        entry.label.Text = string.format("[%s]\nSize: %s / %s\nMulti: %s | Eat: %s\nWalkSpeed: %s", targetPlayer.Name, tostring(sizeVal), tostring(maxVal), tostring(multiVal), tostring(eatVal), tostring(walkSpeed))
+                    else
+                        entry.highlight.Parent = nil
+                        entry.billboard.Parent = nil
                     end
+                else
+                    entry.highlight.Parent = nil
+                    entry.billboard.Parent = nil
                 end
-            else
-                clearESP()
             end
-            task.wait(0.5)
+            task.wait(1)
         end
-        clearESP()
+        for targetPlayer in pairs(espObjects) do removePlayerStatsESP(targetPlayer) end
     end)
 
     -- ==============================================================================
