@@ -71,7 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 15
+    tpDelay = 0.001
 }
 
 local LOCALIZATION = {
@@ -1129,9 +1129,11 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         BackgroundColor3 = G.Math.rgb(4, 20, 27),
         BackgroundTransparency = 0.12,
         Text = "dEnZ",
-        TextColor3 = G.Math.rgb(0, 245, 255),
+        TextColor3 = G.Math.rgb(170, 255, 255),
+        TextStrokeColor3 = G.Math.rgb(0, 225, 255),
+        TextStrokeTransparency = 0.12,
         Font = Enum.Font.GothamBlack,
-        TextSize = 13,
+        TextSize = 15,
         TextScaled = true,
         AutoButtonColor = false,
         Visible = false,
@@ -1140,7 +1142,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     }, {
         cCorner(26),
         cStroke(G.Math.rgb(0, 225, 255), 2),
-        cTextConstraint(9, 13),
+        cTextConstraint(11, 15),
         create("UIGradient", {
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, G.Math.rgb(0, 85, 102)),
