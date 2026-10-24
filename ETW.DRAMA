@@ -48,7 +48,7 @@ local player = G.Services.Players.LocalPlayer or G.Services.Players.PlayerAdded:
 local Camera = G.Services.Workspace.CurrentCamera or G.Services.Workspace:FindFirstChildOfClass("Camera")
 local isTouchDevice = G.Services.UserInputService.TouchEnabled
 
--- Revisi 3: Cyan Neon, panel lebih kecil untuk HP, status berbingkai cyan.
+-- Revisi 4: UI mengikuti referensi Cyan Neon dengan layout HP, tab berikon, dan panel status tetap di atas.
 local THEME = {
     cyan = G.Math.rgb(0, 235, 255),
     cyanSoft = G.Math.rgb(0, 155, 180),
@@ -890,24 +890,24 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-    local isSmallScreen = vp.X <= 800 or isTouchDevice
-    -- Revisi 3: panel lebih ringkas, terutama pada layar sentuh/HP.
+    local isSmallScreen = vp.X <= 900 or isTouchDevice
+    -- Referensi: panel sekitar 80% lebar area game pada HP, dengan tinggi lebih pendek.
     local initialWidth, initialHeight
-    local topBarHeight = isSmallScreen and 34 or 38
+    local topBarHeight = isSmallScreen and 40 or 42
+    local maxPanelWidth = math.max(260, math.min(560, vp.X - 20))
+    local minPanelWidth = math.min(isSmallScreen and 300 or 420, maxPanelWidth)
+    local maxPanelHeight = math.max(260, math.min(isSmallScreen and 400 or 440, vp.Y - 24))
+    local minPanelHeight = math.min(isSmallScreen and 320 or 340, maxPanelHeight)
     local sidebarWidth
     if isSmallScreen then
-        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.72, 240, 340))
-        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.48, 260, 320))
-        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.25, 64, 82))
+        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.80, minPanelWidth, maxPanelWidth))
+        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.63, minPanelHeight, maxPanelHeight))
+        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.35, 112, 198))
     else
-        initialWidth = G.Math.clamp(vp.X * 0.42, 400, 560)
-        initialHeight = G.Math.clamp(vp.Y * 0.50, 300, 400)
-        sidebarWidth = 112
+        initialWidth = G.Math.clamp(vp.X * 0.42, minPanelWidth, maxPanelWidth)
+        initialHeight = G.Math.clamp(vp.Y * 0.50, minPanelHeight, maxPanelHeight)
+        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.34, 145, 198))
     end
-    local minPanelWidth = isSmallScreen and 240 or 400
-    local minPanelHeight = isSmallScreen and 260 or 300
-    local maxPanelWidth = math.max(minPanelWidth, math.min(isSmallScreen and 340 or 560, vp.X - 12))
-    local maxPanelHeight = math.max(minPanelHeight, math.min(isSmallScreen and 320 or 400, vp.Y - 12))
     initialWidth = G.Math.clamp(initialWidth, minPanelWidth, maxPanelWidth)
     initialHeight = G.Math.clamp(initialHeight, minPanelHeight, maxPanelHeight)
 
@@ -917,13 +917,22 @@ local function BuildHubUI()
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = THEME.panel,
-        BackgroundTransparency = 0.10,
+        BackgroundTransparency = 0.12,
         Active = true,
         ClipsDescendants = true,
         Parent = S.ScreenGui
     }, {
-        cCorner(14),
-        cStroke(THEME.cyan, 1.5),
+        cCorner(16),
+        create("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, G.Math.rgb(4, 43, 53)),
+                ColorSequenceKeypoint.new(0.48, G.Math.rgb(5, 13, 19)),
+                ColorSequenceKeypoint.new(1, G.Math.rgb(0, 31, 40))
+            }),
+            Rotation = 28
+        }),
+        create("UIStroke", {Color = THEME.cyan, Thickness = 4, Transparency = 0.68}),
+        cStroke(THEME.cyan, 1.8),
         create("UISizeConstraint", {
             MinSize = Vector2.new(minPanelWidth, minPanelHeight),
             MaxSize = Vector2.new(maxPanelWidth, maxPanelHeight)
@@ -943,10 +952,10 @@ local function BuildHubUI()
             Size = G.Math.ud2(1, -100, 1, 0),
             Position = G.Math.ud2(0, isSmallScreen and 9 or 15, 0, 0),
             BackgroundTransparency = 1,
-            Text = "HUBHUBHUB :P",
+            Text = "ETWDRAMA",
             TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBlack,
-            TextSize = isSmallScreen and 11 or 13,
+            TextSize = isSmallScreen and 14 or 15,
             TextXAlignment = Enum.TextXAlignment.Left
         })
     })
@@ -954,8 +963,8 @@ local function BuildHubUI()
 
     S.closeBtn = create("TextButton", {
         Name = "CloseBtn",
-        Size = G.Math.ud2(0, 28, 0, 28),
-        Position = G.Math.ud2(1, -36, 0.5, -14),
+        Size = G.Math.ud2(0, 32, 0, 32),
+        Position = G.Math.ud2(1, -42, 0.5, -16),
         BackgroundColor3 = THEME.button,
         Text = "X",
         TextColor3 = G.Math.rgb(200, 200, 210),
@@ -963,12 +972,12 @@ local function BuildHubUI()
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(THEME.cyanSoft, 1) })
+    }, { cCorner(9), cStroke(THEME.cyan, 1.2) })
 
     S.minBtn = create("TextButton", {
         Name = "MinBtn",
-        Size = G.Math.ud2(0, 28, 0, 28),
-        Position = G.Math.ud2(1, -70, 0.5, -14),
+        Size = G.Math.ud2(0, 32, 0, 32),
+        Position = G.Math.ud2(1, -80, 0.5, -16),
         BackgroundColor3 = THEME.button,
         Text = "—",
         TextColor3 = G.Math.rgb(200, 200, 210),
@@ -976,10 +985,10 @@ local function BuildHubUI()
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(THEME.cyanSoft, 1) })
+    }, { cCorner(9), cStroke(THEME.cyan, 1.2) })
 
     S.closeBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(200, 45, 45), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = THEME.buttonActive, TextColor3 = THEME.cyan}):Play()
     end)
     S.closeBtn.MouseLeave:Connect(function()
         G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = THEME.button, TextColor3 = THEME.text}):Play()
@@ -1023,8 +1032,8 @@ local function BuildHubUI()
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
             local minW = minPanelWidth
             local minH = minPanelHeight
-            local maxW = math.max(minW, math.min(isSmallScreen and 340 or 560, Camera.ViewportSize.X - 12))
-            local maxH = math.max(minH, math.min(isSmallScreen and 320 or 400, Camera.ViewportSize.Y - 12))
+            local maxW = math.max(minW, math.min(560, Camera.ViewportSize.X - 20))
+            local maxH = math.max(minH, math.min(isSmallScreen and 400 or 440, Camera.ViewportSize.Y - 24))
             S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, minW, math.max(minW, maxW)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, minH, math.max(minH, maxH)))
         end
     end)
@@ -1045,9 +1054,19 @@ local function BuildHubUI()
         ZIndex = 5,
         Parent = S.MainFrame
     }, {
-        cCorner(14),
+        cCorner(16),
         create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = THEME.panel2, BorderSizePixel = 0}),
         create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = THEME.panel2, BorderSizePixel = 0})
+    })
+    create("Frame", {
+        Name = "SidebarNeonDivider",
+        Size = G.Math.ud2(0, 1, 1, -topBarHeight),
+        Position = G.Math.ud2(0, sidebarWidth - 1, 0, topBarHeight),
+        BackgroundColor3 = THEME.cyanSoft,
+        BackgroundTransparency = 0.28,
+        BorderSizePixel = 0,
+        ZIndex = 8,
+        Parent = S.MainFrame
     })
 
     S.SidebarContent = create("Frame", {
@@ -1066,7 +1085,7 @@ local function BuildHubUI()
         Size = G.Math.ud2(1, -sidebarWidth, 1, -topBarHeight),
         Position = G.Math.ud2(0, sidebarWidth, 0, topBarHeight),
         BackgroundColor3 = THEME.panel,
-        BackgroundTransparency = 0.04,
+        BackgroundTransparency = 0.18,
         BorderSizePixel = 0,
         ZIndex = 4,
         Parent = S.MainFrame
@@ -1083,18 +1102,18 @@ local function BuildHubUI()
 
     S.SearchContainer = create("Frame", {
         Name = "SearchBarFrame",
-        Size = G.Math.ud2(1, -20, 0, 32),
-        Position = G.Math.ud2(0, 10, 0, 6),
+        Size = G.Math.ud2(1, -20, 0, 40),
+        Position = G.Math.ud2(0, 10, 0, 14),
         BackgroundColor3 = THEME.button,
         BackgroundTransparency = 0.12,
         ZIndex = 6,
         Parent = S.Content
     }, {
-        cCorner(6),
-        cStroke(THEME.cyanSoft, 1),
+        cCorner(10),
+        cStroke(THEME.cyanSoft, 1.2),
         create("ImageLabel", {
-            Size = G.Math.ud2(0, 14, 0, 14),
-            Position = G.Math.ud2(0, 9, 0.5, -7),
+            Size = G.Math.ud2(0, 16, 0, 16),
+            Position = G.Math.ud2(0, 10, 0.5, -8),
             BackgroundTransparency = 1,
             Image = "rbxassetid://3926305904",
             ImageRectOffset = Vector2.new(964, 324),
@@ -1104,15 +1123,15 @@ local function BuildHubUI()
     })
 
     S.SearchBox = create("TextBox", {
-        Size = G.Math.ud2(1, -56, 1, 0),
-        Position = G.Math.ud2(0, 30, 0, 0),
+        Size = G.Math.ud2(1, -60, 1, 0),
+        Position = G.Math.ud2(0, 34, 0, 0),
         BackgroundTransparency = 1,
         PlaceholderText = getText("searchPlaceholder"),
         Text = "",
         TextColor3 = G.Math.rgb(240, 240, 250),
         PlaceholderColor3 = G.Math.rgb(120, 120, 135),
         Font = Enum.Font.GothamMedium,
-        TextSize = 11,
+        TextSize = isSmallScreen and 12 or 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
         ZIndex = 7,
@@ -1123,9 +1142,9 @@ local function BuildHubUI()
         Name = "ClearSearchBtn",
         Size = G.Math.ud2(0, 22, 0, 22),
         Position = G.Math.ud2(1, -26, 0.5, -11),
-        BackgroundColor3 = G.Math.rgb(32, 32, 40),
+        BackgroundColor3 = THEME.buttonActive,
         Text = "✖",
-        TextColor3 = G.Math.rgb(160, 160, 175),
+        TextColor3 = THEME.cyan,
         Font = Enum.Font.GothamBold,
         TextSize = 10,
         Visible = false,
@@ -1143,67 +1162,77 @@ local function BuildHubUI()
     S.MiniButton = create("TextButton", {
         Size = G.Math.ud2(0, 48, 0, 48),
         Position = G.Math.ud2(0, 20, 0.5, -24),
-        BackgroundColor3 = G.Math.rgb(18, 18, 24),
+        BackgroundColor3 = THEME.button,
         Text = "",
         Visible = false,
         Parent = S.ScreenGui
     }, {
         cCorner(12),
-        cStroke(G.Math.rgb(70, 70, 85), 1.5),
+        cStroke(THEME.cyan, 1.5),
         create("ImageLabel", {
             Size = G.Math.ud2(1, -14, 1, -14),
             Position = G.Math.ud2(0, 7, 0, 7),
             BackgroundTransparency = 1,
             Image = "rbxassetid://7059346373",
-            ImageColor3 = G.Math.rgb(240, 240, 245),
+            ImageColor3 = THEME.cyan,
             ScaleType = Enum.ScaleType.Fit
         })
     })
     makeDraggable(S.MiniButton)
 
-    -- Watermark/status ikut tema Cyan Neon dengan bingkai yang jelas.
-    local watermarkWidth = isSmallScreen and G.Math.floor(G.Math.clamp(initialWidth * 0.72, 180, 240)) or 240
-    local watermarkHeight = isSmallScreen and 24 or 26
+    -- Status card seperti referensi: dua baris, outline Cyan Neon, tetap di atas layar.
+    local watermarkWidth = G.Math.floor(G.Math.clamp(vp.X * 0.62, 300, 440))
+    local watermarkHeight = 68
     S.wmFrame = create("Frame", {
         Name = "Watermark",
         Size = G.Math.ud2(0, watermarkWidth, 0, watermarkHeight),
-        Position = G.Math.ud2(0.5, -watermarkWidth / 2, 0, 8),
-        BackgroundColor3 = THEME.panel2,
-        BackgroundTransparency = 0.06,
+        Position = G.Math.ud2(0.5, 0, 0, 8),
+        AnchorPoint = Vector2.new(0.5, 0),
+        BackgroundColor3 = G.Math.rgb(3, 20, 27),
+        BackgroundTransparency = 0.05,
         BorderSizePixel = 0,
         Visible = states.watermark,
         ZIndex = 30,
         Parent = S.ScreenGui
     }, {
-        cCorner(8),
-        cStroke(THEME.cyan, 1.5),
+        cCorner(17),
+        create("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, G.Math.rgb(4, 39, 49)),
+                ColorSequenceKeypoint.new(0.55, G.Math.rgb(3, 17, 23)),
+                ColorSequenceKeypoint.new(1, G.Math.rgb(3, 35, 45))
+            }),
+            Rotation = 0
+        }),
+        create("UIStroke", {Color = THEME.cyan, Thickness = 3.5, Transparency = 0.62}),
+        cStroke(THEME.cyan, 1.6),
+        create("TextLabel", {
+            Name = "StatusTitle",
+            Size = G.Math.ud2(1, -16, 0, 32),
+            Position = G.Math.ud2(0, 8, 0, 3),
+            BackgroundTransparency = 1,
+            Text = "ETWDRAMA",
+            TextColor3 = THEME.cyan,
+            Font = Enum.Font.GothamBlack,
+            TextSize = isSmallScreen and 16 or 18,
+            TextScaled = false,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            ZIndex = 31
+        }),
         create("TextLabel", {
             Name = "StatsTxt",
-            Size = G.Math.ud2(1, -8, 1, 0),
-            Position = G.Math.ud2(0, 4, 0, 0),
+            Size = G.Math.ud2(1, -16, 0, 22),
+            Position = G.Math.ud2(0, 8, 0, 37),
             BackgroundTransparency = 1,
             Text = "HUB  |  FPS: 60  |  Ping: 0ms",
             TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
-            TextSize = isSmallScreen and 9 or 10,
+            TextSize = isSmallScreen and 11 or 12,
             TextScaled = false,
+            TextXAlignment = Enum.TextXAlignment.Center,
             ZIndex = 31
         })
     })
-    -- Keep the status strip visually attached to the top edge of the panel.
-    local function syncWatermarkPosition()
-        if not S.wmFrame or not S.wmFrame.Parent then return end
-        local framePos = S.MainFrame.AbsolutePosition
-        local frameSize = S.MainFrame.AbsoluteSize
-        S.wmFrame.Position = G.Math.ud2(
-            0, framePos.X + (frameSize.X - watermarkWidth) / 2,
-            0, framePos.Y - watermarkHeight / 2 + 4
-        )
-    end
-    syncWatermarkPosition()
-    S.Runtime.connections[#S.Runtime.connections + 1] = S.MainFrame:GetPropertyChangedSignal("AbsolutePosition"):Connect(syncWatermarkPosition)
-    S.Runtime.connections[#S.Runtime.connections + 1] = S.MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncWatermarkPosition)
-    makeDraggable(S.wmFrame)
 
     S.ModalOverlay = create("Frame", {
         Name = "ModalOverlay",
@@ -1220,12 +1249,12 @@ local function BuildHubUI()
         Size = G.Math.ud2(0, 290, 0, 145),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(20, 20, 26),
+        BackgroundColor3 = THEME.panel2,
         ZIndex = 51,
         Parent = S.ModalOverlay
     }, {
-        cCorner(10),
-        cStroke(G.Math.rgb(60, 60, 75), 1.5),
+        cCorner(12),
+        cStroke(THEME.cyan, 1.5),
         create("TextLabel", {
             Name = "Title",
             Size = G.Math.ud2(1, -20, 0, 24),
@@ -1393,8 +1422,8 @@ local function BuildHubUI()
     S.createPage = function(internalName, tabKey)
         local page = create("ScrollingFrame", {
             Name = internalName,
-            Size = G.Math.ud2(1, -20, 1, -44),
-            Position = G.Math.ud2(0, 10, 0, 42),
+            Size = G.Math.ud2(1, -20, 1, -74),
+            Position = G.Math.ud2(0, 10, 0, 72),
             BackgroundTransparency = 1,
             ScrollBarThickness = 3,
             Visible = false,
@@ -1408,20 +1437,30 @@ local function BuildHubUI()
         })
         S.Pages[internalName] = page
 
+        local tabIcons = {
+            tabFarm = "♧", tabMagnet = "∩", tabVisuals = "◉",
+            tabCombat = "⚔", tabMovement = "↗", tabRewards = "✦", tabSettings = "⚙"
+        }
         local btn = create("TextButton", {
-            Size = G.Math.ud2(0.9, 0, 0, isSmallScreen and 31 or 34),
+            Size = G.Math.ud2(0.91, 0, 0, isSmallScreen and 35 or 37),
             BackgroundColor3 = THEME.button,
-            BackgroundTransparency = 1,
-            Text = getText(tabKey),
+            BackgroundTransparency = 0.22,
+            Text = (tabIcons[tabKey] or "›") .. "   " .. getText(tabKey),
             TextColor3 = THEME.muted,
             Font = Enum.Font.GothamBold,
-            TextSize = 11,
+            TextSize = 12,
             TextScaled = true,
             TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = S.SidebarContent
-        }, { cCorner(6), cTextConstraint(9, 12) })
+        }, {
+            cCorner(10),
+            cStroke(THEME.cyanSoft, 0.9),
+            cTextConstraint(9, 13),
+            create("UIPadding", {PaddingLeft = G.Math.ud(0, 11), PaddingRight = G.Math.ud(0, 4)})
+        })
         S.TabBtns[#S.TabBtns + 1] = {instance = btn, key = tabKey}
 
         btn.MouseEnter:Connect(function() 
@@ -1439,11 +1478,15 @@ local function BuildHubUI()
             for _, p in pairs(S.Pages) do p.Visible = false end
             for _, b in pairs(S.TabBtns) do
                 if b.instance ~= btn then
-                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = THEME.muted, BackgroundTransparency = 1}):Play()
+                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = THEME.muted, BackgroundTransparency = 0.22, BackgroundColor3 = THEME.button}):Play()
+                local outline = b.instance:FindFirstChildOfClass("UIStroke")
+                if outline then G.Services.TweenService:Create(outline, G.Math.tw(0.2), {Color = THEME.cyanSoft, Transparency = 0.15}):Play() end
                 end
             end
             page.Visible = true
-            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = THEME.cyan, BackgroundColor3 = THEME.buttonActive, BackgroundTransparency = 0}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = THEME.cyan, BackgroundColor3 = THEME.buttonActive, BackgroundTransparency = 0.03}):Play()
+            local activeOutline = btn:FindFirstChildOfClass("UIStroke")
+            if activeOutline then G.Services.TweenService:Create(activeOutline, G.Math.tw(0.2), {Color = THEME.cyan, Transparency = 0}):Play() end
         end)
 
         return page
@@ -1454,9 +1497,9 @@ local function BuildHubUI()
             Size = G.Math.ud2(0.98, 0, 0, 18),
             BackgroundTransparency = 1,
             Text = "— " .. string.upper(text) .. " —",
-            TextColor3 = G.Math.rgb(120, 120, 135),
+            TextColor3 = THEME.muted,
             Font = Enum.Font.GothamBold,
-            TextSize = 10,
+            TextSize = 11,
             LayoutOrder = order or 0,
             TextXAlignment = Enum.TextXAlignment.Center,
             ZIndex = 7,
@@ -1510,13 +1553,14 @@ local function BuildHubUI()
         local btn = create("TextButton", {
             Name = "Toggle_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
-            BackgroundColor3 = G.Math.rgb(22, 22, 28),
+            BackgroundColor3 = THEME.button,
+            BackgroundTransparency = 0.12,
             AutoButtonColor = false,
             Text = "",
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(isOn and G.Math.rgb(65, 65, 80) or G.Math.rgb(42, 42, 52), 1) })
+        }, { cCorner(10), cStroke(isOn and THEME.cyan or THEME.cyanSoft, isOn and 1.35 or 0.9) })
 
         local label = create("TextLabel", {
             Name = "BtnLabel",
@@ -1524,7 +1568,7 @@ local function BuildHubUI()
             Position = G.Math.ud2(0, 10, 0, 2),
             BackgroundTransparency = 1,
             Text = getText(key),
-            TextColor3 = isOn and G.Math.rgb(255, 255, 255) or G.Math.rgb(200, 200, 215),
+            TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextScaled = true,
@@ -1539,7 +1583,7 @@ local function BuildHubUI()
             Name = "Track",
             Size = G.Math.ud2(0, 34, 0, 18),
             Position = G.Math.ud2(1, -44, 0.5, -9),
-            BackgroundColor3 = isOn and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50),
+            BackgroundColor3 = isOn and THEME.cyan or G.Math.rgb(20, 43, 51),
             ZIndex = 8,
             Parent = btn
         }, { cCorner(9) })
@@ -1548,7 +1592,7 @@ local function BuildHubUI()
             Name = "Dot",
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = isOn and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-            BackgroundColor3 = isOn and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165),
+            BackgroundColor3 = isOn and G.Math.rgb(2, 22, 28) or THEME.muted,
             ZIndex = 9,
             Parent = switchTrack
         }, { cCorner(7) })
@@ -1556,17 +1600,17 @@ local function BuildHubUI()
         local stroke = btn:FindFirstChildOfClass("UIStroke")
 
         local function updateVisual(state)
-            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and G.Math.rgb(240, 240, 245) or G.Math.rgb(40, 40, 50)}):Play()
+            G.Services.TweenService:Create(switchTrack, G.Math.tw(0.16), {BackgroundColor3 = state and THEME.cyan or G.Math.rgb(20, 43, 51)}):Play()
             G.Services.TweenService:Create(switchDot, G.Math.tw(0.16, Enum.EasingStyle.Quad), {
                 Position = state and G.Math.ud2(1, -16, 0.5, -7) or G.Math.ud2(0, 2, 0.5, -7),
-                BackgroundColor3 = state and G.Math.rgb(16, 16, 20) or G.Math.rgb(150, 150, 165)
+                BackgroundColor3 = state and G.Math.rgb(2, 22, 28) or THEME.muted
             }):Play()
             G.Services.TweenService:Create(label, G.Math.tw(0.16), {
-                TextColor3 = state and G.Math.rgb(255, 255, 255) or G.Math.rgb(200, 200, 215)
+                TextColor3 = THEME.text
             }):Play()
             if stroke then
                 G.Services.TweenService:Create(stroke, G.Math.tw(0.16), {
-                    Color = state and G.Math.rgb(75, 75, 95) or G.Math.rgb(42, 42, 52)
+                    Color = state and THEME.cyan or THEME.cyanSoft
                 }):Play()
             end
         end
@@ -1576,9 +1620,9 @@ local function BuildHubUI()
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(32, 32, 40)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = THEME.buttonActive}):Play()
             task.delay(0.1, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(22, 22, 28)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = THEME.button}):Play()
             end)
 
             states[key] = not states[key]
@@ -1596,11 +1640,12 @@ local function BuildHubUI()
         local cont = create("Frame", {
             Name = "Slider_" .. key,
             Size = G.Math.ud2(0.98, 0, 0, 52),
-            BackgroundColor3 = G.Math.rgb(22, 22, 28),
+            BackgroundColor3 = THEME.button,
+            BackgroundTransparency = 0.12,
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(G.Math.rgb(42, 42, 52), 1) })
+        }, { cCorner(10), cStroke(THEME.cyanSoft, 0.9) })
 
         local lbl = create("TextLabel", {
             Name = "Title",
@@ -1608,7 +1653,7 @@ local function BuildHubUI()
             Position = G.Math.ud2(0, 10, 0, 4),
             BackgroundTransparency = 1,
             Text = getText(key),
-            TextColor3 = G.Math.rgb(230, 230, 240),
+            TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextScaled = true,
@@ -1623,43 +1668,43 @@ local function BuildHubUI()
             Name = "ValueInput",
             Size = G.Math.ud2(0, 48, 0, 18),
             Position = G.Math.ud2(1, -58, 0, 5),
-            BackgroundColor3 = G.Math.rgb(32, 32, 40),
+            BackgroundColor3 = THEME.panel2,
             Text = tostring(states[key]),
-            TextColor3 = G.Math.rgb(255, 255, 255),
+            TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             ClearTextOnFocus = false,
             ZIndex = 8,
             Parent = cont
-        }, { cCorner(4) })
+        }, { cCorner(5), cStroke(THEME.cyanSoft, 0.8) })
 
         local decBtn = create("TextButton", {
             Name = "DecBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(0, 8, 0, 25),
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = THEME.buttonActive,
             Text = "—",
-            TextColor3 = G.Math.rgb(200, 200, 215),
+            TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBold,
             TextSize = 10,
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(5), cStroke(THEME.cyanSoft, 0.8) })
 
         local incBtn = create("TextButton", {
             Name = "IncBtn",
             Size = G.Math.ud2(0, 24, 0, 22),
             Position = G.Math.ud2(1, -32, 0, 25),
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = THEME.buttonActive,
             Text = "+",
-            TextColor3 = G.Math.rgb(200, 200, 215),
+            TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBold,
             TextSize = 12,
             AutoButtonColor = false,
             ZIndex = 9,
             Parent = cont
-        }, { cCorner(4), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(5), cStroke(THEME.cyanSoft, 0.8) })
 
         local hitZone = create("TextButton", {
             Name = "SlideHitZone",
@@ -1676,7 +1721,7 @@ local function BuildHubUI()
             Name = "TrackVisual",
             Size = G.Math.ud2(1, 0, 0, 6),
             Position = G.Math.ud2(0, 0, 0.5, -3),
-            BackgroundColor3 = G.Math.rgb(14, 14, 18),
+            BackgroundColor3 = THEME.panel,
             BorderSizePixel = 0,
             ZIndex = 8,
             Parent = hitZone
@@ -1686,7 +1731,7 @@ local function BuildHubUI()
         local fill = create("Frame", {
             Name = "Fill",
             Size = G.Math.ud2(fillPct, 0, 1, 0),
-            BackgroundColor3 = G.Math.rgb(240, 240, 250),
+            BackgroundColor3 = THEME.cyan,
             ZIndex = 9,
             Parent = slideTrack
         }, { cCorner(3) })
@@ -1703,14 +1748,14 @@ local function BuildHubUI()
 
         decBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] - step, true)
-            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
+            G.Services.TweenService:Create(decBtn, G.Math.tw(0.08), {BackgroundColor3 = THEME.cyanSoft}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(decBtn, G.Math.tw(0.1), {BackgroundColor3 = THEME.buttonActive}):Play() end)
         end)
 
         incBtn.MouseButton1Click:Connect(function()
             applyVal(states[key] + step, true)
-            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(45, 45, 55)}):Play()
-            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play() end)
+            G.Services.TweenService:Create(incBtn, G.Math.tw(0.08), {BackgroundColor3 = THEME.cyanSoft}):Play()
+            task.delay(0.1, function() G.Services.TweenService:Create(incBtn, G.Math.tw(0.1), {BackgroundColor3 = THEME.buttonActive}):Play() end)
         end)
 
         valBox.FocusLost:Connect(function()
@@ -1768,20 +1813,21 @@ local function BuildHubUI()
             Name = "Action_" .. key,
             Size = isInsideRow and G.Math.ud2(0.48, 0, 0, 38) or G.Math.ud2(0.98, 0, 0, 38),
             Text = "",
-            BackgroundColor3 = G.Math.rgb(28, 28, 36),
+            BackgroundColor3 = THEME.button,
+            BackgroundTransparency = 0.08,
             AutoButtonColor = false,
             ClipsDescendants = true,
             ZIndex = 7,
             Parent = parent
-        }, { cCorner(8), cStroke(G.Math.rgb(48, 48, 60), 1), label })
+        }, { cCorner(10), cStroke(THEME.cyanSoft, 1), label })
 
         S.localizedLabels[#S.localizedLabels + 1] = {instance = label, key = key}
         S.registeredSearchElements[#S.registeredSearchElements + 1] = {container = btn, key = key}
 
         btn.MouseButton1Click:Connect(function()
-            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = G.Math.rgb(65, 65, 80)}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.08), {BackgroundColor3 = THEME.buttonActive}):Play()
             task.delay(0.12, function()
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(28, 28, 36)}):Play()
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {BackgroundColor3 = THEME.button}):Play()
             end)
             if cb then cb() end
         end)
@@ -1863,15 +1909,15 @@ local function BuildHubUI()
         local closeBtn = create("TextButton", {
             Size = G.Math.ud2(0, 26, 0, 26),
             Position = G.Math.ud2(1, -38, 0.5, -13),
-            BackgroundColor3 = G.Math.rgb(24, 24, 30),
+            BackgroundColor3 = THEME.button,
             Text = "X",
-            TextColor3 = G.Math.rgb(200, 200, 215),
+            TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             AutoButtonColor = false,
             ZIndex = 63,
             Parent = topBar
-        }, { cCorner(6), cStroke(G.Math.rgb(45, 45, 55), 1) })
+        }, { cCorner(8), cStroke(THEME.cyanSoft, 1) })
 
         local scroll = create("ScrollingFrame", {
             Size = G.Math.ud2(1, -24, 1, -96),
@@ -2070,9 +2116,9 @@ local function BuildHubUI()
 
     local langBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(32, 32, 40),
+        BackgroundColor3 = THEME.button,
         Text = getText("langBtn"),
-        TextColor3 = G.Math.rgb(255, 255, 255),
+        TextColor3 = THEME.text,
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         TextScaled = true,
@@ -2080,13 +2126,13 @@ local function BuildHubUI()
         ClipsDescendants = true,
         ZIndex = 7,
         Parent = setRow1
-    }, {cCorner(8), cStroke(G.Math.rgb(50, 50, 65), 1), cTextConstraint(9, 12)})
+    }, {cCorner(10), cStroke(THEME.cyanSoft, 0.9), cTextConstraint(9, 12)})
 
     local keybindBtn = create("TextButton", {
         Size = G.Math.ud2(1, 0, 1, 0),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = THEME.button,
         Text = getText("menuKeyBtn") .. "[" .. tostring(states.menuKey) .. "]",
-        TextColor3 = G.Math.rgb(220, 220, 235),
+        TextColor3 = THEME.text,
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         TextScaled = true,
@@ -2094,13 +2140,13 @@ local function BuildHubUI()
         ClipsDescendants = true,
         ZIndex = 7,
         Parent = setRow2
-    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
+    }, {cCorner(10), cStroke(THEME.cyanSoft, 0.9), cTextConstraint(9, 12)})
 
     local changelogBtn = create("TextButton", {
         Size = G.Math.ud2(0.98, 0, 0, 34),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = THEME.button,
         Text = getText("btnViewChangelog"),
-        TextColor3 = G.Math.rgb(230, 230, 245),
+        TextColor3 = THEME.text,
         Font = Enum.Font.GothamBold,
         TextSize = 11,
         TextScaled = true,
@@ -2109,7 +2155,7 @@ local function BuildHubUI()
         LayoutOrder = 4,
         ZIndex = 7,
         Parent = pageSettings
-    }, {cCorner(8), cStroke(G.Math.rgb(45, 45, 55), 1), cTextConstraint(9, 12)})
+    }, {cCorner(10), cStroke(THEME.cyanSoft, 0.9), cTextConstraint(9, 12)})
     changelogBtn.MouseButton1Click:Connect(showChangelogModal)
 
     local isListeningKey = false
@@ -2143,8 +2189,12 @@ local function BuildHubUI()
         S.modalBtnCancel.Text = getText("modalBtnCancel")
         S.modalBtnConfirm.Text = getText("modalBtnConfirm")
 
+        local localizedTabIcons = {
+            tabFarm = "♧", tabMagnet = "∩", tabVisuals = "◉",
+            tabCombat = "⚔", tabMovement = "↗", tabRewards = "✦", tabSettings = "⚙"
+        }
         for _, tab in ipairs(S.TabBtns) do
-            tab.instance.Text = getText(tab.key)
+            tab.instance.Text = (localizedTabIcons[tab.key] or "›") .. "   " .. getText(tab.key)
         end
         for k, arr in pairs(S.UI_STORAGE) do
             local txt = getText(k)
@@ -2216,10 +2266,15 @@ local function BuildHubUI()
     if S.TabBtns[1] and S.TabBtns[1].instance then
         S.currentActiveTabBtn = S.TabBtns[1].instance
         G.Services.TweenService:Create(S.TabBtns[1].instance, G.Math.tw(0.2), {
-            TextColor3 = G.Math.rgb(255, 255, 255),
-            BackgroundColor3 = G.Math.rgb(40, 40, 50),
-            BackgroundTransparency = 0
+            TextColor3 = THEME.cyan,
+            BackgroundColor3 = THEME.buttonActive,
+            BackgroundTransparency = 0.03
         }):Play()
+        local firstTabOutline = S.TabBtns[1].instance:FindFirstChildOfClass("UIStroke")
+        if firstTabOutline then
+            firstTabOutline.Color = THEME.cyan
+            firstTabOutline.Transparency = 0
+        end
     end
 
     -- ====================================================================
