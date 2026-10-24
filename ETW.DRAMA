@@ -878,8 +878,9 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-    local initialWidth = G.Math.clamp(vp.X * (isTouchDevice and 0.92 or 0.48), isTouchDevice and 300 or 480, isTouchDevice and 520 or 640)
-    local initialHeight = G.Math.clamp(vp.Y * (isTouchDevice and 0.72 or 0.58), isTouchDevice and 280 or 330, 440)
+    -- Keep original desktop sizing logic; scale the existing layout to fit small touch screens.
+    local initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
+    local initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
@@ -893,10 +894,14 @@ local function BuildHubUI()
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(50, 50, 60), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(isTouchDevice and 300 or 450, isTouchDevice and 280 or 300), MaxSize = Vector2.new(900, 650)})
+        create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
     })
 
-    S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
+    local mainScaleValue = 1
+    if isTouchDevice then
+        mainScaleValue = G.Math.clamp(math.min((vp.X - 24) / initialWidth, (vp.Y - 36) / initialHeight), 0.72, 1)
+    end
+    S.MainScale = create("UIScale", {Scale = mainScaleValue, Parent = S.MainFrame})
 
     S.TopBar = create("Frame", {
         Name = "TopBar",
@@ -1106,16 +1111,16 @@ local function BuildHubUI()
         Name = "dEnzMiniButton",
         Size = G.Math.ud2(0, 48, 0, 48),
         Position = G.Math.ud2(0, 20, 0.5, -24),
-        BackgroundColor3 = G.Math.rgb(22, 27, 34),
-        BackgroundTransparency = 0.12,
+        BackgroundColor3 = G.Math.rgb(18, 18, 22),
+        BackgroundTransparency = 0.10,
         Text = "dEnz",
         TextColor3 = G.Math.rgb(191, 239, 255),
         Font = Enum.Font.Gotham,
         TextSize = 12,
         TextScaled = false,
         AutoButtonColor = false,
-        Visible = false,
         Active = true,
+        Visible = false,
         Parent = S.ScreenGui
     }, {
         cCorner(24),
