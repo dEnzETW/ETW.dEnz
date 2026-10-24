@@ -891,18 +891,18 @@ local function BuildHubUI()
 
     local vp = Camera.ViewportSize
     local isSmallScreen = vp.X <= 900 or isTouchDevice
-    -- Referensi: panel sekitar 80% lebar area game pada HP, dengan tinggi lebih pendek.
+    -- Revisi 5: ukuran HP sengaja dibuat kecil dan stabil, tanpa berubah-ubah antar revisi.
     local initialWidth, initialHeight
-    local topBarHeight = isSmallScreen and 40 or 42
-    local maxPanelWidth = math.max(260, math.min(560, vp.X - 20))
-    local minPanelWidth = math.min(isSmallScreen and 300 or 420, maxPanelWidth)
-    local maxPanelHeight = math.max(260, math.min(isSmallScreen and 400 or 440, vp.Y - 24))
-    local minPanelHeight = math.min(isSmallScreen and 320 or 340, maxPanelHeight)
+    local topBarHeight = isSmallScreen and 34 or 42
+    local maxPanelWidth = math.max(250, math.min(isSmallScreen and 330 or 560, vp.X - 20))
+    local minPanelWidth = math.min(isSmallScreen and 250 or 420, maxPanelWidth)
+    local maxPanelHeight = math.max(270, math.min(isSmallScreen and 340 or 440, vp.Y - 24))
+    local minPanelHeight = math.min(isSmallScreen and 270 or 340, maxPanelHeight)
     local sidebarWidth
     if isSmallScreen then
-        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.80, minPanelWidth, maxPanelWidth))
-        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.63, minPanelHeight, maxPanelHeight))
-        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.35, 112, 198))
+        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.66, minPanelWidth, maxPanelWidth))
+        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.43, minPanelHeight, maxPanelHeight))
+        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.31, 78, 98))
     else
         initialWidth = G.Math.clamp(vp.X * 0.42, minPanelWidth, maxPanelWidth)
         initialHeight = G.Math.clamp(vp.Y * 0.50, minPanelHeight, maxPanelHeight)
@@ -1032,8 +1032,8 @@ local function BuildHubUI()
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
             local minW = minPanelWidth
             local minH = minPanelHeight
-            local maxW = math.max(minW, math.min(560, Camera.ViewportSize.X - 20))
-            local maxH = math.max(minH, math.min(isSmallScreen and 400 or 440, Camera.ViewportSize.Y - 24))
+            local maxW = math.max(minW, math.min(isSmallScreen and 330 or 560, Camera.ViewportSize.X - 20))
+            local maxH = math.max(minH, math.min(isSmallScreen and 340 or 440, Camera.ViewportSize.Y - 24))
             S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, minW, math.max(minW, maxW)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, minH, math.max(minH, maxH)))
         end
     end)
@@ -1181,12 +1181,12 @@ local function BuildHubUI()
     makeDraggable(S.MiniButton)
 
     -- Status card seperti referensi: dua baris, outline Cyan Neon, tetap di atas layar.
-    local watermarkWidth = G.Math.floor(G.Math.clamp(vp.X * 0.62, 300, 440))
-    local watermarkHeight = 68
+    local watermarkWidth = isSmallScreen and G.Math.floor(G.Math.clamp(vp.X * 0.48, 190, 250)) or G.Math.floor(G.Math.clamp(vp.X * 0.42, 280, 360))
+    local watermarkHeight = isSmallScreen and 42 or 54
     S.wmFrame = create("Frame", {
         Name = "Watermark",
         Size = G.Math.ud2(0, watermarkWidth, 0, watermarkHeight),
-        Position = G.Math.ud2(0.5, 0, 0, 8),
+        Position = G.Math.ud2(0.5, 0, 0, isSmallScreen and 4 or 8),
         AnchorPoint = Vector2.new(0.5, 0),
         BackgroundColor3 = G.Math.rgb(3, 20, 27),
         BackgroundTransparency = 0.05,
@@ -1204,30 +1204,30 @@ local function BuildHubUI()
             }),
             Rotation = 0
         }),
-        create("UIStroke", {Color = THEME.cyan, Thickness = 3.5, Transparency = 0.62}),
-        cStroke(THEME.cyan, 1.6),
+        create("UIStroke", {Color = THEME.cyan, Thickness = isSmallScreen and 2 or 2.5, Transparency = 0.35}),
+        cStroke(THEME.cyan, 1.1),
         create("TextLabel", {
             Name = "StatusTitle",
-            Size = G.Math.ud2(1, -16, 0, 32),
-            Position = G.Math.ud2(0, 8, 0, 3),
+            Size = G.Math.ud2(1, -12, 0, isSmallScreen and 16 or 25),
+            Position = G.Math.ud2(0, 6, 0, 1),
             BackgroundTransparency = 1,
             Text = "ETWDRAMA",
             TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBlack,
-            TextSize = isSmallScreen and 16 or 18,
+            TextSize = isSmallScreen and 10 or 15,
             TextScaled = false,
             TextXAlignment = Enum.TextXAlignment.Center,
             ZIndex = 31
         }),
         create("TextLabel", {
             Name = "StatsTxt",
-            Size = G.Math.ud2(1, -16, 0, 22),
-            Position = G.Math.ud2(0, 8, 0, 37),
+            Size = G.Math.ud2(1, -10, 0, isSmallScreen and 15 or 20),
+            Position = G.Math.ud2(0, 5, 0, isSmallScreen and 22 or 29),
             BackgroundTransparency = 1,
             Text = "HUB  |  FPS: 60  |  Ping: 0ms",
             TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
-            TextSize = isSmallScreen and 11 or 12,
+            TextSize = isSmallScreen and 8 or 11,
             TextScaled = false,
             TextXAlignment = Enum.TextXAlignment.Center,
             ZIndex = 31
@@ -1446,7 +1446,7 @@ local function BuildHubUI()
             BackgroundColor3 = THEME.button,
             BackgroundTransparency = 0.22,
             Text = (tabIcons[tabKey] or "›") .. "   " .. getText(tabKey),
-            TextColor3 = THEME.muted,
+            TextColor3 = G.Math.rgb(245, 250, 255),
             Font = Enum.Font.GothamBold,
             TextSize = 12,
             TextScaled = true,
@@ -1470,7 +1470,7 @@ local function BuildHubUI()
         end)
         btn.MouseLeave:Connect(function() 
             if S.currentActiveTabBtn ~= btn then 
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = THEME.muted}):Play() 
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = G.Math.rgb(245, 250, 255)}):Play() 
             end 
         end)
         btn.MouseButton1Click:Connect(function()
@@ -1478,7 +1478,7 @@ local function BuildHubUI()
             for _, p in pairs(S.Pages) do p.Visible = false end
             for _, b in pairs(S.TabBtns) do
                 if b.instance ~= btn then
-                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = THEME.muted, BackgroundTransparency = 0.22, BackgroundColor3 = THEME.button}):Play()
+                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(245, 250, 255), BackgroundTransparency = 0.22, BackgroundColor3 = THEME.button}):Play()
                 local outline = b.instance:FindFirstChildOfClass("UIStroke")
                 if outline then G.Services.TweenService:Create(outline, G.Math.tw(0.2), {Color = THEME.cyanSoft, Transparency = 0.15}):Play() end
                 end
