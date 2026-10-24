@@ -71,7 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 0.05
+    tpDelay = 15
 }
 
 local LOCALIZATION = {
@@ -882,18 +882,20 @@ local function BuildHubUI()
     local vp = Camera.ViewportSize
 local isPhone = vp.X < 600
 
+-- Compact layout: noticeably smaller than the original panel, with responsive
+-- sizing so labels, controls, and touch targets remain usable on phones.
 local initialWidth = math.min(
-    vp.X * (isPhone and 0.88 or 0.68),
-    isPhone and 420 or 640
+    vp.X * (isPhone and 0.72 or 0.48),
+    isPhone and 340 or 500
 )
 
 local initialHeight = math.min(
-    vp.Y * (isPhone and 0.62 or 0.68),
-    isPhone and 480 or 560
+    vp.Y * (isPhone and 0.52 or 0.54),
+    isPhone and 360 or 420
 )
 
-initialWidth = math.max(initialWidth, math.min(vp.X - 16, 300))
-initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
+initialWidth = math.max(initialWidth, math.min(vp.X - 16, 280))
+initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
@@ -908,23 +910,14 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(0, 225, 255), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(math.min(280, vp.X - 16), math.min(240, vp.Y - 40)), MaxSize = Vector2.new(math.max(280, math.min(900, vp.X - 16)), math.max(240, math.min(650, vp.Y - 40)))})
+        create("UISizeConstraint", {MinSize = Vector2.new(280, 240), MaxSize = Vector2.new(520, 440)})
     })
 
     S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
 
-    -- Responsive sizing: keep the whole panel inside the current viewport.
-    local function fitToViewport()
-        local size = Camera.ViewportSize
-        local w = math.clamp(size.X * (size.X < 600 and 0.88 or 0.68), math.min(280, size.X - 16), math.min(900, size.X - 16))
-        local h = math.clamp(size.Y * (size.X < 600 and 0.78 or 0.68), math.min(240, size.Y - 40), math.min(650, size.Y - 40))
-        S.MainFrame.Size = G.Math.ud2(0, w, 0, h)
-    end
-    S.Runtime.connections[#S.Runtime.connections + 1] = Camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitToViewport)
-
     S.TopBar = create("Frame", {
         Name = "TopBar",
-        Size = G.Math.ud2(1, 0, 0, 42),
+        Size = G.Math.ud2(1, 0, 0, 36),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Parent = S.MainFrame
@@ -1011,8 +1004,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            local liveVp = Camera.ViewportSize
-            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, math.min(280, liveVp.X - 16), math.min(900, liveVp.X - 16)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, math.min(240, liveVp.Y - 40), math.min(650, liveVp.Y - 40)))
+            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 280, 520), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 240, 440))
         end
     end)
 
@@ -1025,8 +1017,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
     S.Sidebar = create("Frame", {
         Name = "Sidebar",
-        Size = G.Math.ud2(0, 130, 1, -42),
-        Position = G.Math.ud2(0, 0, 0, 42),
+        Size = G.Math.ud2(0, 108, 1, -36),
+        Position = G.Math.ud2(0, 0, 0, 36),
         BackgroundColor3 = G.Math.rgb(4, 28, 36),
         BackgroundTransparency = 0.28,
         BorderSizePixel = 0,
@@ -1046,13 +1038,13 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         Parent = S.Sidebar
     }, {
         create("UIPadding", {PaddingTop = G.Math.ud(0, 8)}),
-        create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, math.max(2, math.min(5, math.floor((initialHeight - 42 - 8 - 8 * 24) / 7)))), HorizontalAlignment = Enum.HorizontalAlignment.Center})
+        create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center})
     })
 
     S.ContentBackdrop = create("Frame", {
         Name = "ContentBackdrop",
-        Size = G.Math.ud2(1, -130, 1, -42),
-        Position = G.Math.ud2(0, 130, 0, 42),
+        Size = G.Math.ud2(1, -108, 1, -36),
+        Position = G.Math.ud2(0, 108, 0, 36),
         BackgroundColor3 = G.Math.rgb(4, 25, 33),
         BackgroundTransparency = 0.32,
         BorderSizePixel = 0,
@@ -1062,8 +1054,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
     S.Content = create("Frame", {
         Name = "Content",
-        Size = G.Math.ud2(1, -130, 1, -42),
-        Position = G.Math.ud2(0, 130, 0, 42),
+        Size = G.Math.ud2(1, -108, 1, -36),
+        Position = G.Math.ud2(0, 108, 0, 36),
         BackgroundTransparency = 1,
         ZIndex = 5,
         Parent = S.MainFrame
@@ -1128,26 +1120,49 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         S.applySearchFilter("")
     end)
 
+    -- Floating circular dEnZ button: built entirely from Roblox GUI text/shapes;
+    -- no local image file or uploaded image asset is required.
     S.MiniButton = create("TextButton", {
-        Size = G.Math.ud2(0, 48, 0, 48),
-        Position = G.Math.ud2(0, 20, 0.5, -24),
-        BackgroundColor3 = G.Math.rgb(4, 30, 39),
-        Text = "",
+        Name = "dEnZPanelButton",
+        Size = G.Math.ud2(0, 52, 0, 52),
+        Position = G.Math.ud2(0, 18, 0.5, -26),
+        BackgroundColor3 = G.Math.rgb(4, 20, 27),
+        BackgroundTransparency = 0.12,
+        Text = "dEnZ",
+        TextColor3 = G.Math.rgb(0, 245, 255),
+        Font = Enum.Font.GothamBlack,
+        TextSize = 13,
+        TextScaled = true,
+        AutoButtonColor = false,
         Visible = false,
+        ZIndex = 40,
         Parent = S.ScreenGui
     }, {
-        cCorner(12),
-        cStroke(G.Math.rgb(0, 190, 220), 1.5),
-        create("ImageLabel", {
-            Size = G.Math.ud2(1, -14, 1, -14),
-            Position = G.Math.ud2(0, 7, 0, 7),
-            BackgroundTransparency = 1,
-            Image = "rbxassetid://7059346373",
-            ImageColor3 = G.Math.rgb(240, 240, 245),
-            ScaleType = Enum.ScaleType.Fit
+        cCorner(26),
+        cStroke(G.Math.rgb(0, 225, 255), 2),
+        cTextConstraint(9, 13),
+        create("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, G.Math.rgb(0, 85, 102)),
+                ColorSequenceKeypoint.new(0.5, G.Math.rgb(4, 30, 39)),
+                ColorSequenceKeypoint.new(1, G.Math.rgb(0, 190, 220))
+            }),
+            Rotation = 45
         })
     })
     makeDraggable(S.MiniButton)
+    S.MiniButton.MouseEnter:Connect(function()
+        G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
+            BackgroundTransparency = 0.02,
+            TextColor3 = G.Math.rgb(255, 255, 255)
+        }):Play()
+    end)
+    S.MiniButton.MouseLeave:Connect(function()
+        G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
+            BackgroundTransparency = 0.12,
+            TextColor3 = G.Math.rgb(0, 245, 255)
+        }):Play()
+    end)
 
     S.wmFrame = create("Frame", {
         Name = "Watermark",
@@ -1297,8 +1312,8 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                 if not S.guiOpen then
                     S.MainFrame.Visible = false
                     S.MiniButton.Visible = true
-                    S.MiniButton.Size = G.Math.ud2(0, 36, 0, 36)
-                    G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.25, Enum.EasingStyle.Back), {Size = G.Math.ud2(0, 48, 0, 48)}):Play()
+                    S.MiniButton.Size = G.Math.ud2(0, 40, 0, 40)
+                    G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.25, Enum.EasingStyle.Back), {Size = G.Math.ud2(0, 52, 0, 52)}):Play()
                 end
             end)
         end
@@ -1360,12 +1375,19 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
     S.createPage = function(internalName, tabKey)
         local page = create("ScrollingFrame", {
             Name = internalName,
-            Size = G.Math.ud2(1, -20, 1, -44),
-            Position = G.Math.ud2(0, 10, 0, 42),
+            Size = G.Math.ud2(1, -16, 1, -40),
+            Position = G.Math.ud2(0, 8, 0, 36),
             BackgroundTransparency = 1,
-            ScrollBarThickness = 3,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 4,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            ScrollingEnabled = true,
+            Active = true,
+            ClipsDescendants = true,
             Visible = false,
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            -- CanvasSize is updated from UIListLayout.AbsoluteContentSize below.
+            -- This is more reliable than AutomaticCanvasSize on different clients.
+            AutomaticCanvasSize = Enum.AutomaticSize.None,
             CanvasSize = G.Math.ud2(0, 0, 0, 0),
             ZIndex = 6,
             Parent = S.Content
@@ -1373,10 +1395,27 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
             create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder, Padding = G.Math.ud(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center}),
             create("UIPadding", {PaddingTop = G.Math.ud(0, 4), PaddingBottom = G.Math.ud(0, 18)})
         })
+
+        local pageLayout = page:FindFirstChildOfClass("UIListLayout")
+        local pagePadding = page:FindFirstChildOfClass("UIPadding")
+        local function refreshPageCanvas()
+            if not page or not page.Parent or not pageLayout then return end
+            local topPad = pagePadding and pagePadding.PaddingTop.Offset or 0
+            local bottomPad = pagePadding and pagePadding.PaddingBottom.Offset or 0
+            local contentHeight = pageLayout.AbsoluteContentSize.Y + topPad + bottomPad + 4
+            page.CanvasSize = G.Math.ud2(0, 0, 0, math.max(contentHeight, page.AbsoluteSize.Y))
+        end
+
+        if pageLayout then
+            pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshPageCanvas)
+        end
+        page:GetPropertyChangedSignal("AbsoluteSize"):Connect(refreshPageCanvas)
+        task.defer(refreshPageCanvas)
+
         S.Pages[internalName] = page
 
         local btn = create("TextButton", {
-            Size = G.Math.ud2(0.9, 0, 0, math.max(22, math.min(34, math.floor((initialHeight - 42 - 16) / 8)))),
+            Size = G.Math.ud2(0.9, 0, 0, 34),
             BackgroundColor3 = G.Math.rgb(57, 22, 35),
             BackgroundTransparency = 1,
             Text = getText(tabKey),
@@ -1410,6 +1449,15 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                 end
             end
             page.Visible = true
+            -- Recalculate after the page becomes visible and start at the top.
+            task.defer(function()
+                if page and page.Parent then
+                    page.CanvasPosition = Vector2.new(0, 0)
+                    if pageLayout then
+                        refreshPageCanvas()
+                    end
+                end
+            end)
             G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(0, 220, 255), BackgroundTransparency = 0}):Play()
         end)
 
@@ -2156,18 +2204,18 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         end
         currentLayoutMode = newMode
 
-        updateRowChildren(farmRow1, 38)
-        updateRowChildren(farmRow2, 38)
-        updateRowChildren(magRow1, 38)
-        updateRowChildren(magRow2, 38)
-        updateRowChildren(visRow1, 38)
-        updateRowChildren(comRow1, 38)
-        updateRowChildren(moveRow1, 38)
-        updateRowChildren(moveRow2, 38)
-        updateRowChildren(moveSliderRow, 52)
-        updateRowChildren(rewRow1, 38)
-        updateRowChildren(setRow1, 36)
-        updateRowChildren(setRow2, 36)
+        updateRowChildren(farmRow1, 32)
+        updateRowChildren(farmRow2, 32)
+        updateRowChildren(magRow1, 32)
+        updateRowChildren(magRow2, 32)
+        updateRowChildren(visRow1, 32)
+        updateRowChildren(comRow1, 32)
+        updateRowChildren(moveRow1, 32)
+        updateRowChildren(moveRow2, 32)
+        updateRowChildren(moveSliderRow, 44)
+        updateRowChildren(rewRow1, 32)
+        updateRowChildren(setRow1, 30)
+        updateRowChildren(setRow2, 30)
 
         if S.SearchBox and S.SearchBox.Text ~= "" then
             S.applySearchFilter(S.SearchBox.Text)
@@ -2207,6 +2255,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local localEat = G.Services.ReplicatedStorage:WaitForChild("LocalEvents"):WaitForChild("Eat")
 
         local lastActivityTime = os.clock()
+        local lastTeleportAt = 0
         local wasFarming = false
 
         -- Функция синхронизации визуального состояния тумблера в GUI
@@ -2299,7 +2348,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
                         -- Поиск живого объекта на карте (с приоритетом земли)
                         local targetPart, isGround = getRandomEdiblePart()
-                        if targetPart and targetPart.Parent then
+                        -- Teleport hanya boleh memulai siklus baru jika chunk sebelumnya
+                        -- sudah selesai dimakan; jangan menyela rangkaian hit/grab/eat.
+                        if targetPart and targetPart.Parent and currentChunkVal.Value == nil and (os.clock() - lastTeleportAt) >= states.tpDelay then
                             local partPos = targetPart.Position
                             local standPos
                             local lookTarget
@@ -2317,8 +2368,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
-
-                            task.wait(states.tpDelay)
+                            lastTeleportAt = os.clock()
 
                             -- Захват
                             if currentChunkVal.Value == nil then
@@ -2347,12 +2397,21 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
                                 localEat:Fire()
 
+                                -- Не телепортируемся к следующей цели, пока текущий кусок
+                                -- действительно не съеден. Интервал проверки не меняет
+                                -- скорость hit/eat самого игрового механизма.
                                 local eatTimeout = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 0.35 do
+                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 5 do
                                     task.wait(0.02)
                                 end
 
-                                lastActivityTime = os.clock() -- Успешное действие: кусок съеден!
+                                if currentChunkVal.Value == nil then
+                                    lastActivityTime = os.clock() -- Кусок съеден
+                                else
+                                    -- Если сервер не подтвердил завершение за 5 сек,
+                                    -- не запускаем следующий teleport поверх текущего куска.
+                                    task.wait(0.1)
+                                end
                             end
 
                             local anchorTimeout = os.clock()
