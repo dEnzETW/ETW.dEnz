@@ -71,7 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 0.001
+    tpDelay = 0.01
 }
 
 local LOCALIZATION = {
@@ -1127,9 +1127,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Size = G.Math.ud2(0, 52, 0, 52),
         Position = G.Math.ud2(0, 18, 0.5, -26),
         BackgroundColor3 = G.Math.rgb(4, 20, 27),
-        BackgroundTransparency = 0.12,
+        BackgroundTransparency = 1,
         Text = "dEnZ",
-        TextColor3 = G.Math.rgb(170, 255, 255),
+        TextColor3 = G.Math.rgb(0, 245, 255),
         TextStrokeColor3 = G.Math.rgb(0, 225, 255),
         TextStrokeTransparency = 0.12,
         Font = Enum.Font.GothamBlack,
@@ -1142,26 +1142,18 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
     }, {
         cCorner(26),
         cStroke(G.Math.rgb(0, 225, 255), 2),
-        cTextConstraint(11, 15),
-        create("UIGradient", {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, G.Math.rgb(0, 85, 102)),
-                ColorSequenceKeypoint.new(0.5, G.Math.rgb(4, 30, 39)),
-                ColorSequenceKeypoint.new(1, G.Math.rgb(0, 190, 220))
-            }),
-            Rotation = 45
-        })
+        cTextConstraint(11, 15)
     })
     makeDraggable(S.MiniButton)
     S.MiniButton.MouseEnter:Connect(function()
         G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
-            BackgroundTransparency = 0.02,
+            BackgroundTransparency = 1,
             TextColor3 = G.Math.rgb(255, 255, 255)
         }):Play()
     end)
     S.MiniButton.MouseLeave:Connect(function()
         G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
-            BackgroundTransparency = 0.12,
+            BackgroundTransparency = 1,
             TextColor3 = G.Math.rgb(0, 245, 255)
         }):Play()
     end)
