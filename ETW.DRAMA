@@ -48,6 +48,18 @@ local player = G.Services.Players.LocalPlayer or G.Services.Players.PlayerAdded:
 local Camera = G.Services.Workspace.CurrentCamera or G.Services.Workspace:FindFirstChildOfClass("Camera")
 local isTouchDevice = G.Services.UserInputService.TouchEnabled
 
+-- Revisi 2: Cyan Neon + panel gelap transparan, dengan layout responsif HP.
+local THEME = {
+    cyan = G.Math.rgb(0, 235, 255),
+    cyanSoft = G.Math.rgb(0, 155, 180),
+    panel = G.Math.rgb(8, 14, 20),
+    panel2 = G.Math.rgb(10, 22, 29),
+    button = G.Math.rgb(12, 29, 37),
+    buttonActive = G.Math.rgb(0, 76, 91),
+    text = G.Math.rgb(225, 250, 255),
+    muted = G.Math.rgb(116, 166, 177)
+}
+
 -- Хранилище состояний переключателей и игровых систем (Язык по умолчанию: English)
 local states = {
     language = "English",
@@ -878,34 +890,42 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-    -- Revisi 1: ukuran awal panel lebih proporsional untuk layar HP.
-    -- Desktop mempertahankan ukuran awal sebelumnya.
     local isSmallScreen = vp.X <= 800 or isTouchDevice
-    local initialWidth
-    local initialHeight
+    local initialWidth, initialHeight
+    local topBarHeight = isSmallScreen and 38 or 42
+    local sidebarWidth
     if isSmallScreen then
-        initialWidth = G.Math.clamp(vp.X * 0.80, 320, 560)
-        initialHeight = G.Math.clamp(vp.Y * 0.64, 300, 420)
+        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.88, 260, 430))
+        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.58, 300, 390))
+        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.27, 76, 100))
     else
         initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
         initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
+        sidebarWidth = 130
     end
+    local minPanelWidth = isSmallScreen and 260 or 450
+    local minPanelHeight = 300
+    local maxPanelWidth = math.max(minPanelWidth, math.min(isSmallScreen and 430 or 900, vp.X - 12))
+    local maxPanelHeight = math.max(minPanelHeight, math.min(isSmallScreen and 390 or 650, vp.Y - 12))
+    initialWidth = G.Math.clamp(initialWidth, minPanelWidth, maxPanelWidth)
+    initialHeight = G.Math.clamp(initialHeight, minPanelHeight, maxPanelHeight)
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
         Size = G.Math.ud2(0, initialWidth, 0, initialHeight),
         Position = G.Math.ud2(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = G.Math.rgb(14, 14, 18),
+        BackgroundColor3 = THEME.panel,
+        BackgroundTransparency = 0.10,
         Active = true,
         ClipsDescendants = true,
         Parent = S.ScreenGui
     }, {
         cCorner(14),
-        cStroke(G.Math.rgb(50, 50, 60), 1.5),
+        cStroke(THEME.cyan, 1.5),
         create("UISizeConstraint", {
-            MinSize = isSmallScreen and Vector2.new(300, 280) or Vector2.new(450, 300),
-            MaxSize = Vector2.new(900, 650)
+            MinSize = Vector2.new(minPanelWidth, minPanelHeight),
+            MaxSize = Vector2.new(maxPanelWidth, maxPanelHeight)
         })
     })
 
@@ -913,19 +933,19 @@ local function BuildHubUI()
 
     S.TopBar = create("Frame", {
         Name = "TopBar",
-        Size = G.Math.ud2(1, 0, 0, 42),
+        Size = G.Math.ud2(1, 0, 0, topBarHeight),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Parent = S.MainFrame
     }, {
         create("TextLabel", {
-            Size = G.Math.ud2(0, 260, 1, 0),
-            Position = G.Math.ud2(0, 15, 0, 0),
+            Size = G.Math.ud2(1, -100, 1, 0),
+            Position = G.Math.ud2(0, isSmallScreen and 9 or 15, 0, 0),
             BackgroundTransparency = 1,
             Text = "HUBHUBHUB :P",
-            TextColor3 = G.Math.rgb(255, 255, 255),
+            TextColor3 = THEME.cyan,
             Font = Enum.Font.GothamBlack,
-            TextSize = 13,
+            TextSize = isSmallScreen and 11 or 13,
             TextXAlignment = Enum.TextXAlignment.Left
         })
     })
@@ -935,40 +955,40 @@ local function BuildHubUI()
         Name = "CloseBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -36, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = THEME.button,
         Text = "X",
         TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
+    }, { cCorner(7), cStroke(THEME.cyanSoft, 1) })
 
     S.minBtn = create("TextButton", {
         Name = "MinBtn",
         Size = G.Math.ud2(0, 28, 0, 28),
         Position = G.Math.ud2(1, -70, 0.5, -14),
-        BackgroundColor3 = G.Math.rgb(24, 24, 30),
+        BackgroundColor3 = THEME.button,
         Text = "—",
         TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
-    }, { cCorner(7), cStroke(G.Math.rgb(45, 45, 55), 1) })
+    }, { cCorner(7), cStroke(THEME.cyanSoft, 1) })
 
     S.closeBtn.MouseEnter:Connect(function()
         G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(200, 45, 45), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
     end)
     S.closeBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
+        G.Services.TweenService:Create(S.closeBtn, G.Math.tw(0.15), {BackgroundColor3 = THEME.button, TextColor3 = THEME.text}):Play()
     end)
 
     S.minBtn.MouseEnter:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(45, 45, 55), TextColor3 = G.Math.rgb(255, 255, 255)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = THEME.buttonActive, TextColor3 = THEME.cyan}):Play()
     end)
     S.minBtn.MouseLeave:Connect(function()
-        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = G.Math.rgb(24, 24, 30), TextColor3 = G.Math.rgb(200, 200, 210)}):Play()
+        G.Services.TweenService:Create(S.minBtn, G.Math.tw(0.15), {BackgroundColor3 = THEME.button, TextColor3 = THEME.text}):Play()
     end)
 
     S.ResizeGrip = create("ImageButton", {
@@ -978,8 +998,8 @@ local function BuildHubUI()
         AnchorPoint = Vector2.new(1, 1),
         BackgroundTransparency = 1,
         Image = "rbxassetid://5854832560",
-        ImageColor3 = G.Math.rgb(140, 140, 150),
-        ImageTransparency = 0.4,
+        ImageColor3 = THEME.cyan,
+        ImageTransparency = 0.15,
         ZIndex = 25,
         Parent = S.MainFrame
     })
@@ -1000,10 +1020,10 @@ local function BuildHubUI()
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            local minW = isSmallScreen and 300 or 450
-            local minH = isSmallScreen and 280 or 300
-            local maxW = math.min(900, Camera.ViewportSize.X - 16)
-            local maxH = math.min(650, Camera.ViewportSize.Y - 16)
+            local minW = minPanelWidth
+            local minH = minPanelHeight
+            local maxW = math.max(minW, math.min(isSmallScreen and 430 or 900, Camera.ViewportSize.X - 12))
+            local maxH = math.max(minH, math.min(isSmallScreen and 390 or 650, Camera.ViewportSize.Y - 12))
             S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, minW, math.max(minW, maxW)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, minH, math.max(minH, maxH)))
         end
     end)
@@ -1011,22 +1031,22 @@ local function BuildHubUI()
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputEnded:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and isResizing then
             isResizing = false
-            G.Services.TweenService:Create(S.ResizeGrip, G.Math.tw(0.2), {ImageColor3 = G.Math.rgb(140, 140, 150), ImageTransparency = 0.4}):Play()
+            G.Services.TweenService:Create(S.ResizeGrip, G.Math.tw(0.2), {ImageColor3 = THEME.cyan, ImageTransparency = 0.15}):Play()
         end
     end)
 
     S.Sidebar = create("Frame", {
         Name = "Sidebar",
-        Size = G.Math.ud2(0, 130, 1, -42),
-        Position = G.Math.ud2(0, 0, 0, 42),
-        BackgroundColor3 = G.Math.rgb(20, 20, 24),
+        Size = G.Math.ud2(0, sidebarWidth, 1, -topBarHeight),
+        Position = G.Math.ud2(0, 0, 0, topBarHeight),
+        BackgroundColor3 = THEME.panel2,
         BorderSizePixel = 0,
         ZIndex = 5,
         Parent = S.MainFrame
     }, {
         cCorner(14),
-        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0}),
-        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = G.Math.rgb(20, 20, 24), BorderSizePixel = 0})
+        create("Frame", {Name = "TopPatch", Size = G.Math.ud2(1, 0, 0, 16), Position = G.Math.ud2(0, 0, 0, 0), BackgroundColor3 = THEME.panel2, BorderSizePixel = 0}),
+        create("Frame", {Name = "RightPatch", Size = G.Math.ud2(0, 16, 1, 0), Position = G.Math.ud2(1, -16, 0, 0), BackgroundColor3 = THEME.panel2, BorderSizePixel = 0})
     })
 
     S.SidebarContent = create("Frame", {
@@ -1042,9 +1062,10 @@ local function BuildHubUI()
 
     S.ContentBackdrop = create("Frame", {
         Name = "ContentBackdrop",
-        Size = G.Math.ud2(1, -130, 1, -42),
-        Position = G.Math.ud2(0, 130, 0, 42),
-        BackgroundColor3 = G.Math.rgb(16, 16, 20),
+        Size = G.Math.ud2(1, -sidebarWidth, 1, -topBarHeight),
+        Position = G.Math.ud2(0, sidebarWidth, 0, topBarHeight),
+        BackgroundColor3 = THEME.panel,
+        BackgroundTransparency = 0.04,
         BorderSizePixel = 0,
         ZIndex = 4,
         Parent = S.MainFrame
@@ -1052,8 +1073,8 @@ local function BuildHubUI()
 
     S.Content = create("Frame", {
         Name = "Content",
-        Size = G.Math.ud2(1, -130, 1, -42),
-        Position = G.Math.ud2(0, 130, 0, 42),
+        Size = G.Math.ud2(1, -sidebarWidth, 1, -topBarHeight),
+        Position = G.Math.ud2(0, sidebarWidth, 0, topBarHeight),
         BackgroundTransparency = 1,
         ZIndex = 5,
         Parent = S.MainFrame
@@ -1063,12 +1084,13 @@ local function BuildHubUI()
         Name = "SearchBarFrame",
         Size = G.Math.ud2(1, -20, 0, 32),
         Position = G.Math.ud2(0, 10, 0, 6),
-        BackgroundColor3 = G.Math.rgb(22, 22, 28),
+        BackgroundColor3 = THEME.button,
+        BackgroundTransparency = 0.12,
         ZIndex = 6,
         Parent = S.Content
     }, {
         cCorner(6),
-        cStroke(G.Math.rgb(40, 40, 50), 1),
+        cStroke(THEME.cyanSoft, 1),
         create("ImageLabel", {
             Size = G.Math.ud2(0, 14, 0, 14),
             Position = G.Math.ud2(0, 9, 0.5, -7),
@@ -1076,7 +1098,7 @@ local function BuildHubUI()
             Image = "rbxassetid://3926305904",
             ImageRectOffset = Vector2.new(964, 324),
             ImageRectSize = Vector2.new(36, 36),
-            ImageColor3 = G.Math.rgb(140, 140, 155)
+            ImageColor3 = THEME.cyanSoft
         })
     })
 
@@ -1365,11 +1387,11 @@ local function BuildHubUI()
         S.Pages[internalName] = page
 
         local btn = create("TextButton", {
-            Size = G.Math.ud2(0.9, 0, 0, 34),
-            BackgroundColor3 = G.Math.rgb(28, 28, 34),
+            Size = G.Math.ud2(0.9, 0, 0, isSmallScreen and 31 or 34),
+            BackgroundColor3 = THEME.button,
             BackgroundTransparency = 1,
             Text = getText(tabKey),
-            TextColor3 = G.Math.rgb(140, 140, 155),
+            TextColor3 = THEME.muted,
             Font = Enum.Font.GothamBold,
             TextSize = 11,
             TextScaled = true,
@@ -1382,12 +1404,12 @@ local function BuildHubUI()
 
         btn.MouseEnter:Connect(function() 
             if S.currentActiveTabBtn ~= btn then 
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = G.Math.rgb(230, 230, 240)}):Play() 
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = THEME.cyan}):Play() 
             end 
         end)
         btn.MouseLeave:Connect(function() 
             if S.currentActiveTabBtn ~= btn then 
-                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = G.Math.rgb(140, 140, 155)}):Play() 
+                G.Services.TweenService:Create(btn, G.Math.tw(0.15), {TextColor3 = THEME.muted}):Play() 
             end 
         end)
         btn.MouseButton1Click:Connect(function()
@@ -1395,11 +1417,11 @@ local function BuildHubUI()
             for _, p in pairs(S.Pages) do p.Visible = false end
             for _, b in pairs(S.TabBtns) do
                 if b.instance ~= btn then
-                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(140, 140, 155), BackgroundTransparency = 1}):Play()
+                    G.Services.TweenService:Create(b.instance, G.Math.tw(0.2), {TextColor3 = THEME.muted, BackgroundTransparency = 1}):Play()
                 end
             end
             page.Visible = true
-            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = G.Math.rgb(255, 255, 255), BackgroundColor3 = G.Math.rgb(40, 40, 50), BackgroundTransparency = 0}):Play()
+            G.Services.TweenService:Create(btn, G.Math.tw(0.2), {TextColor3 = THEME.cyan, BackgroundColor3 = THEME.buttonActive, BackgroundTransparency = 0}):Play()
         end)
 
         return page
