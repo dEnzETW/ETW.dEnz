@@ -1,4 +1,3 @@
-
 --aislop warning, but i dont care about it 
 
 
@@ -119,7 +118,6 @@ local LOCALIZATION = {
         -- Функции: Бой
         toggleAntiRagdoll = "Anti-Ragdoll (No Fall)",
         toggleAntiGiant = "Auto-Dodge Giants",
-
         
         -- Функции: Движение
         toggleFly = "Flight Mode (Fly)",
@@ -321,7 +319,7 @@ local function executeSell()
 end
 
 local GROUND_KEYWORDS = {
-    "ground", "grass", "dirt", "soil", "sand", "floor",
+    "ground", "grass", "dirt", "soil", "sand", "floor", 
     "road", "path", "terrain", "base", "plate", "mud", "earth"
 }
 
@@ -339,7 +337,7 @@ local GROUND_MATERIALS = {
 
 local function isGroundPart(part)
     if not part or not part:IsA("BasePart") then return false end
-
+    
     -- 1. Проверка по валидному материалу
     if part.Material and GROUND_MATERIALS[part.Material] then
         return true
@@ -361,39 +359,11 @@ local function isGroundPart(part)
     return false
 end
 
--- Multi-map lookup: prefer Workspace.Map, but recover if a game switches
--- map folders/models or streams the map under a different container.
-local function getActiveMapRoots()
-    local roots = {}
-    local seen = {}
-    local function add(root)
-        if root and root ~= player.Character and not seen[root] then
-            seen[root] = true
-            table.insert(roots, root)
-        end
-    end
-
-    add(Workspace:FindFirstChild("Map"))
-    for _, child in ipairs(Workspace:GetChildren()) do
-        local n = string.lower(child.Name)
-        if child ~= player.Character and (n == "maps" or n:find("map") or n:find("world") or n:find("stage") or n:find("chunk")) then
-            add(child)
-        end
-    end
-    -- Fallback for games whose active map is directly parented to Workspace.
-    if #roots == 0 then add(Workspace) end
-    return roots
-end
-
 local function getRandomEdiblePart()
-    local allDescendants = {}
-    for _, root in ipairs(getActiveMapRoots()) do
-        for _, obj in ipairs(root:GetDescendants()) do
-            if obj ~= player.Character and not (player.Character and obj:IsDescendantOf(player.Character)) then
-                table.insert(allDescendants, obj)
-            end
-        end
-    end
+    local map = Workspace:FindFirstChild("Map")
+    if not map then return nil end
+
+    local allDescendants = map:GetDescendants()
     if #allDescendants == 0 then return nil end
 
     -- Считываем текущий размер (из Character или leaderstats)
@@ -409,9 +379,8 @@ local function getRandomEdiblePart()
     -- 1. Быстрый случайный поиск (O(1) оптимизация для мобилок)
     for _ = 1, 40 do
         local randomObj = allDescendants[math.random(1, #allDescendants)]
-        if randomObj:IsA("BasePart")
-            and not (player.Character and randomObj:IsDescendantOf(player.Character))
-            and randomObj.Name ~= "Bedrock"
+        if randomObj:IsA("BasePart") 
+            and randomObj.Name ~= "Bedrock" 
             and randomObj.Name ~= "Barrier" 
             and randomObj.CanCollide 
             and randomObj.Transparency < 0.8 
@@ -434,9 +403,8 @@ local function getRandomEdiblePart()
     -- 2. Если за 40 случайных попыток земля не выпала, ищем ближайший блок земли
     if prioritizeGround then
         for _, obj in ipairs(allDescendants) do
-            if obj:IsA("BasePart")
-                and not (player.Character and obj:IsDescendantOf(player.Character))
-                and obj.Name ~= "Bedrock"
+            if obj:IsA("BasePart") 
+                and obj.Name ~= "Bedrock" 
                 and obj.Name ~= "Barrier" 
                 and obj.CanCollide 
                 and obj.Transparency < 0.8 
@@ -479,13 +447,10 @@ local function getPrioritizedDrops()
     local drops = {}
     local myPos = HumanoidRootPart.Position
 
-    -- Drops may be nested in folders/models, especially after map transitions.
-
-    for _, obj in ipairs(G.Services.Workspace:GetDescendants()) do
+    for _, obj in ipairs(G.Services.Workspace:GetChildren()) do
         if canCollect(obj) then
             local dist = (obj.Position - myPos).Magnitude
-            local timeLeftObj = obj:FindFirstChild("TimeLeft")
-            local timeLeftVal = timeLeftObj and timeLeftObj.Value or 15
+            local timeLeftVal = obj:FindFirstChild("TimeLeft") and obj.TimeLeft.Value or 15
             table.insert(drops, {
                 Part = obj,
                 Dist = dist,
@@ -601,10 +566,6 @@ local function setSmartFade(targetFrame, isFading)
         else
             local base = targetFrame:GetAttribute("BaseBgTrans") or 0
             G.Services.TweenService:Create(targetFrame, tweenInfo, {BackgroundTransparency = base}):Play()
-        end
-    end)
-end
-
             targetFrame:SetAttribute("BaseBgTrans", nil)
         end
     end)
@@ -845,7 +806,6 @@ local function showNotification(message, nType, title, duration)
             TextXAlignment = Enum.TextXAlignment.Left
         }),
         create("Frame", {
-
             Name = "TimerBar",
             Size = G.Math.ud2(1, 0, 0, 2),
             Position = G.Math.ud2(0, 0, 1, -2),
@@ -966,7 +926,6 @@ local function BuildHubUI()
         Text = "X",
         TextColor3 = G.Math.rgb(200, 200, 210),
         Font = Enum.Font.GothamBold,
-
         TextSize = 12,
         AutoButtonColor = false,
         Parent = S.TopBar
@@ -1087,7 +1046,6 @@ local function BuildHubUI()
         Name = "SearchBarFrame",
         Size = G.Math.ud2(1, -20, 0, 32),
         Position = G.Math.ud2(0, 10, 0, 6),
-
         BackgroundColor3 = G.Math.rgb(22, 22, 28),
         ZIndex = 6,
         Parent = S.Content
@@ -1208,7 +1166,6 @@ local function BuildHubUI()
         cCorner(10),
         cStroke(G.Math.rgb(60, 60, 75), 1.5),
         create("TextLabel", {
-
             Name = "Title",
             Size = G.Math.ud2(1, -20, 0, 24),
             Position = G.Math.ud2(0, 10, 0, 14),
@@ -1329,7 +1286,6 @@ local function BuildHubUI()
         for _, item in ipairs(S.registeredSearchElements) do
             if item.container and item.container.Parent then
                 if query == "" then
-
                     item.container.Visible = true
                 else
                     local match = false
@@ -1450,7 +1406,6 @@ local function BuildHubUI()
     local function updateRowChildren(row, childHeight)
         if not row then return end
         local children = {}
-
         for _, child in ipairs(row:GetChildren()) do
             if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                 table.insert(children, child)
@@ -1571,8 +1526,6 @@ local function BuildHubUI()
         end)
 
         return btn
-    end
-
     end
 
     S.createSlider = function(parent, min, max, default, key, step, cb)
@@ -1813,7 +1766,6 @@ local function BuildHubUI()
             BackgroundTransparency = 1,
             AutoButtonColor = false,
             Text = "",
-
             ZIndex = 60,
             Parent = S.ScreenGui
         })
@@ -1934,7 +1886,6 @@ local function BuildHubUI()
     local pageFarm = S.createPage("Farm", "tabFarm")
     local pageMagnet = S.createPage("Magnet", "tabMagnet")
     local pageVisuals = S.createPage("Visuals", "tabVisuals")
-
     local pageCombat = S.createPage("Combat", "tabCombat")
     local pageMovement = S.createPage("Movement", "tabMovement")
     local pageRewards = S.createPage("Rewards", "tabRewards")
@@ -2175,7 +2126,6 @@ local function BuildHubUI()
         if not force and newMode == currentLayoutMode then
             return
         end
-
         currentLayoutMode = newMode
 
         updateRowChildren(farmRow1, 38)
@@ -2295,6 +2245,7 @@ local function BuildHubUI()
                     local currentChunkVal = char:FindFirstChild("CurrentChunk")
                     local events = getCharEvents()
 
+                    if hum.Health > 0 and currentChunkVal and events then
                         hum:ChangeState(Enum.HumanoidStateType.Running)
 
                         -- Проверка на полный размер
@@ -2415,7 +2366,6 @@ local function BuildHubUI()
                                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0.1, 0)
 
                                     if typeof(firetouchinterest) == "function" then
-
                                         firetouchinterest(hrp, itemPart, 0)
                                         firetouchinterest(hrp, itemPart, 1)
                                     end
@@ -2441,7 +2391,7 @@ local function BuildHubUI()
                 local char = player.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    for _, obj in ipairs(G.Services.Workspace:GetDescendants()) do
+                    for _, obj in ipairs(G.Services.Workspace:GetChildren()) do
                         if canCollect(obj) then
                             if typeof(firetouchinterest) == "function" then
                                 firetouchinterest(hrp, obj, 0)
@@ -2536,7 +2486,6 @@ local function BuildHubUI()
             if states.playerESP then
                 clearESP()
                 local myChar = player.Character
-
                 local myPhys = myChar and myChar:FindFirstChild("PhysicalSize") and myChar.PhysicalSize.Value or 1
 
                 for _, p in ipairs(G.Services.Players:GetPlayers()) do
@@ -2657,8 +2606,6 @@ local function BuildHubUI()
                     hum.PlatformStand = false
                     hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
-            end
-
             end
             task.wait()
         end
