@@ -84,8 +84,8 @@ local function createESP(targetPlayer)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "rEmPlayerStatsText"
     billboard.AlwaysOnTop = true
-    billboard.Size = UDim2.new(0, 220, 0, 92)
-    billboard.StudsOffset = Vector3.new(0, 4, 0)
+    billboard.Size = UDim2.new(0, 190, 0, 76)
+    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
 
     local label = Instance.new("TextLabel")
     label.Name = "Stats"
@@ -96,9 +96,19 @@ local function createESP(targetPlayer)
     label.TextStrokeTransparency = 0
     label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 12
+    label.TextSize = 10
     label.TextWrapped = true
+    label.RichText = false
     label.TextYAlignment = Enum.TextYAlignment.Bottom
+
+    -- Give each player a slightly different vertical offset to reduce label overlap.
+    local playerIndex = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.UserId <= targetPlayer.UserId then
+            playerIndex += 1
+        end
+    end
+    billboard.StudsOffset = Vector3.new(0, 3.2 + ((playerIndex % 4) * 0.8), 0)
 
     espObjects[targetPlayer] = {
         highlight = highlight,
