@@ -71,7 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 0.02
+    tpDelay = 15
 }
 
 local LOCALIZATION = {
@@ -2197,6 +2197,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
         local localEat = G.Services.ReplicatedStorage:WaitForChild("LocalEvents"):WaitForChild("Eat")
 
         local lastActivityTime = os.clock()
+        local lastTeleportAt = 0
         local wasFarming = false
 
         -- Функция синхронизации визуального состояния тумблера в GUI
@@ -2289,7 +2290,9 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
                         -- Поиск живого объекта на карте (с приоритетом земли)
                         local targetPart, isGround = getRandomEdiblePart()
-                        if targetPart and targetPart.Parent then
+                        -- Teleport hanya boleh memulai siklus baru jika chunk sebelumnya
+                        -- sudah selesai dimakan; jangan menyela rangkaian hit/grab/eat.
+                        if targetPart and targetPart.Parent and currentChunkVal.Value == nil and (os.clock() - lastTeleportAt) >= states.tpDelay then
                             local partPos = targetPart.Position
                             local standPos
                             local lookTarget
@@ -2307,8 +2310,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
-
-                            task.wait(states.tpDelay)
+                            lastTeleportAt = os.clock()
 
                             -- Захват
                             if currentChunkVal.Value == nil then
@@ -2337,12 +2339,21 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
 
                                 localEat:Fire()
 
+                                -- Не телепортируемся к следующей цели, пока текущий кусок
+                                -- действительно не съеден. Интервал проверки не меняет
+                                -- скорость hit/eat самого игрового механизма.
                                 local eatTimeout = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 0.35 do
+                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 5 do
                                     task.wait(0.02)
                                 end
 
-                                lastActivityTime = os.clock() -- Успешное действие: кусок съеден!
+                                if currentChunkVal.Value == nil then
+                                    lastActivityTime = os.clock() -- Кусок съеден
+                                else
+                                    -- Если сервер не подтвердил завершение за 5 сек,
+                                    -- не запускаем следующий teleport поверх текущего куска.
+                                    task.wait(0.1)
+                                end
                             end
 
                             local anchorTimeout = os.clock()
