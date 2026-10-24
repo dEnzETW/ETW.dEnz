@@ -2337,21 +2337,22 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 40, 280))
                                 end
                                 task.wait(0.02)
 
-                                localEat:Fire()
-
-                                -- Не телепортируемся к следующей цели, пока текущий кусок
-                                -- действительно не съеден. Интервал проверки не меняет
-                                -- скорость hit/eat самого игрового механизма.
+                                -- Eat работает отдельно от 15-секундного таймера телепорта.
+                                -- Пока текущий chunk удерживается, повторяем внутреннее событие
+                                -- Eat; игровая логика/сервер определяет допустимую скорость укусов.
+                                -- Следующий teleport разрешён только после CurrentChunk == nil.
                                 local eatTimeout = os.clock()
-                                while currentChunkVal.Value ~= nil and (os.clock() - eatTimeout) < 5 do
-                                    task.wait(0.02)
+                                while currentChunkVal.Value ~= nil
+                                    and currentChunkVal.Value.Parent ~= nil
+                                    and (os.clock() - eatTimeout) < 30 do
+                                    localEat:Fire()
+                                    task.wait(0.05)
                                 end
 
                                 if currentChunkVal.Value == nil then
                                     lastActivityTime = os.clock() -- Кусок съеден
                                 else
-                                    -- Если сервер не подтвердил завершение за 5 сек,
-                                    -- не запускаем следующий teleport поверх текущего куска.
+                                    -- Не телепортируемся поверх chunk, если игра не подтвердила съедение.
                                     task.wait(0.1)
                                 end
                             end
