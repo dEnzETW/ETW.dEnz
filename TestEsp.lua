@@ -16,7 +16,7 @@ if previous then previous:Destroy() end
 
 local DEFAULT_SPEED = 100
 local MIN_SPEED = 0
-local MAX_SPEED = 300
+-- No fixed maximum; user chooses the speed value in the input
 
 local speedValue = DEFAULT_SPEED
 local speedEnabled = false
@@ -95,7 +95,7 @@ speedBox.Size = UDim2.new(1, -20, 0, 28)
 speedBox.BackgroundColor3 = Color3.fromRGB(14, 29, 35)
 speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedBox.PlaceholderColor3 = Color3.fromRGB(170, 190, 195)
-speedBox.PlaceholderText = "0–300"
+speedBox.PlaceholderText = "Enter speed (no max)"
 speedBox.Text = tostring(DEFAULT_SPEED)
 speedBox.ClearTextOnFocus = false
 speedBox.Font = Enum.Font.GothamBold
@@ -181,7 +181,7 @@ speedBox.FocusLost:Connect(function()
     if not value then
         speedValue = DEFAULT_SPEED
     else
-        speedValue = math.clamp(value, MIN_SPEED, MAX_SPEED)
+        speedValue = math.max(value, MIN_SPEED)
     end
     speedBox.Text = tostring(speedValue)
 end)
@@ -191,7 +191,7 @@ toggle.Activated:Connect(function()
         stopSpeed()
     else
         local value = tonumber(speedBox.Text)
-        if value then speedValue = math.clamp(value, MIN_SPEED, MAX_SPEED) end
+        if value then speedValue = math.max(value, MIN_SPEED) end
         speedBox.Text = tostring(speedValue)
         startSpeed()
     end
