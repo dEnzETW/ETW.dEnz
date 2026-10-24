@@ -878,8 +878,18 @@ local function BuildHubUI()
     })
 
     local vp = Camera.ViewportSize
-    local initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
-    local initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
+    -- Revisi 1: ukuran awal panel lebih proporsional untuk layar HP.
+    -- Desktop mempertahankan ukuran awal sebelumnya.
+    local isSmallScreen = vp.X <= 800 or isTouchDevice
+    local initialWidth
+    local initialHeight
+    if isSmallScreen then
+        initialWidth = G.Math.clamp(vp.X * 0.80, 320, 560)
+        initialHeight = G.Math.clamp(vp.Y * 0.64, 300, 420)
+    else
+        initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
+        initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
+    end
 
     S.MainFrame = create("Frame", {
         Name = "MainFrame",
@@ -893,7 +903,10 @@ local function BuildHubUI()
     }, {
         cCorner(14),
         cStroke(G.Math.rgb(50, 50, 60), 1.5),
-        create("UISizeConstraint", {MinSize = Vector2.new(450, 300), MaxSize = Vector2.new(900, 650)})
+        create("UISizeConstraint", {
+            MinSize = isSmallScreen and Vector2.new(300, 280) or Vector2.new(450, 300),
+            MaxSize = Vector2.new(900, 650)
+        })
     })
 
     S.MainScale = create("UIScale", {Scale = 1, Parent = S.MainFrame})
@@ -987,7 +1000,11 @@ local function BuildHubUI()
     S.Runtime.connections[#S.Runtime.connections + 1] = G.Services.UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
-            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, 450, 900), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, 300, 650))
+            local minW = isSmallScreen and 300 or 450
+            local minH = isSmallScreen and 280 or 300
+            local maxW = math.min(900, Camera.ViewportSize.X - 16)
+            local maxH = math.min(650, Camera.ViewportSize.Y - 16)
+            S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, minW, math.max(minW, maxW)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, minH, math.max(minH, maxH)))
         end
     end)
 
