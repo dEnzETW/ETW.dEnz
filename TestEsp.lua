@@ -2421,33 +2421,73 @@ local function BuildHubUI()
     end)
 
     -- ==============================================================================
-    -- TELEPORT-ONLY LOOP: no Grab/Eat calls here.
-    -- Teleports to a new edible target at most once every 10 seconds.
-    -- EAT/GRAB + auto-sell remain handled by the separate Auto EAT toggle.
+    -- AUTO FARM TELEPORT LOOP + TARGET RECOVERY
+    -- This block only moves the player and checks whether a target was acquired.
+    -- Auto EAT / Grab / Eat logic above is intentionally left unchanged.
     -- ==============================================================================
     task.spawn(function()
         local TELEPORT_INTERVAL = 10
+        local VERIFY_TIMEOUT = 2.0
+        local RETRY_DELAY = 1.0
         local lastTeleportAt = 0
         local wasTeleporting = false
+        local pendingCheck = nil
+        local lastTargetPart = nil
+        local lastNoTargetNoticeAt = 0
 
-        local function setTeleportVisual(state)
-            if S.UI_STORAGE["toggleRandomFarm"] then
-                for _, elem in ipairs(S.UI_STORAGE["toggleRandomFarm"]) do
-                    if elem.update then elem.update(state) end
-                end
-            end
+        local function getObservedSize(char)
+            local sizeValue = char and char:FindFirstChild("Size")
+            local charSize = sizeValue and tonumber(sizeValue.Value) or 0
+            local stats = player:FindFirstChild("leaderstats")
+            local statSizeValue = stats and stats:FindFirstChild("Size")
+            local statSize = statSizeValue and tonumber(statSizeValue.Value) or 0
+            return math.max(charSize, statSize)
         end
 
         while S.Runtime.running do
             if states.randomTPFarm then
                 wasTeleporting = true
-                if os.clock() - lastTeleportAt >= TELEPORT_INTERVAL then
-                    local char = player.Character
+                local now = os.clock()
+                local char = player.Character
+
+                -- Verify the previous teleport without touching Auto EAT.
+                if pendingCheck then
+                    local currentChunk = char and char:FindFirstChild("CurrentChunk")
+                    local chunkAcquired = currentChunk and currentChunk.Value ~= nil
+                    local sizeIncreased = getObservedSize(char) > (pendingCheck.sizeBefore + 0.001)
+
+                    if chunkAcquired or sizeIncreased then
+                        -- The game exposed an acquired chunk or a size increase.
+                        pendingCheck = nil
+                    elseif now >= pendingCheck.deadline then
+                        showNotification(
+                            (states.language == "Russian")
+                                and "Объект не получен — ищу другую цель..."
+                                or "No object detected — searching for another target...",
+                            "Warning"
+                        )
+                        pendingCheck = nil
+                        -- Retry the target search soon; do not reset/respawn the character.
+                        lastTeleportAt = os.clock() - TELEPORT_INTERVAL + RETRY_DELAY
+                    end
+                end
+
+                if not pendingCheck and (os.clock() - lastTeleportAt) >= TELEPORT_INTERVAL then
+                    char = player.Character
                     local hum = char and char:FindFirstChildOfClass("Humanoid")
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
                     if char and hum and hrp and hum.Health > 0 then
-                        local targetPart, isGround = getRandomEdiblePart()
+                        local targetPart, isGround
+                        -- Avoid immediately choosing the same target that just failed.
+                        for _ = 1, 6 do
+                            local candidate, candidateIsGround = getRandomEdiblePart()
+                            if candidate and candidate.Parent and candidate ~= lastTargetPart then
+                                targetPart, isGround = candidate, candidateIsGround
+                                break
+                            end
+                        end
+
                         if targetPart and targetPart.Parent then
                             local partPos = targetPart.Position
                             local standPos
@@ -2465,10 +2505,28 @@ local function BuildHubUI()
                                 lookTarget = Vector3.new(partPos.X, standPos.Y, partPos.Z)
                             end
 
+                            local currentSizeBefore = getObservedSize(char)
                             hrp.CFrame = CFrame.new(standPos, lookTarget)
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.AssemblyAngularVelocity = Vector3.zero
                             lastTeleportAt = os.clock()
+                            lastTargetPart = targetPart
+                            pendingCheck = {
+                                deadline = lastTeleportAt + VERIFY_TIMEOUT,
+                                sizeBefore = currentSizeBefore
+                            }
+                        else
+                            if (os.clock() - lastNoTargetNoticeAt) >= 3 then
+                                lastNoTargetNoticeAt = os.clock()
+                                showNotification(
+                                    (states.language == "Russian")
+                                        and "Цель не найдена — обновляю поиск объектов..."
+                                        or "No target found — refreshing object search...",
+                                    "Warning"
+                                )
+                            end
+                            lastTargetPart = nil
+                            lastTeleportAt = os.clock() - TELEPORT_INTERVAL + RETRY_DELAY
                         end
                     end
                 end
@@ -2476,6 +2534,8 @@ local function BuildHubUI()
             else
                 if wasTeleporting then
                     wasTeleporting = false
+                    pendingCheck = nil
+                    lastTargetPart = nil
                 end
                 task.wait(0.1)
             end
