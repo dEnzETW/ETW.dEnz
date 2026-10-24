@@ -48,7 +48,7 @@ local player = G.Services.Players.LocalPlayer or G.Services.Players.PlayerAdded:
 local Camera = G.Services.Workspace.CurrentCamera or G.Services.Workspace:FindFirstChildOfClass("Camera")
 local isTouchDevice = G.Services.UserInputService.TouchEnabled
 
--- Revisi 2: Cyan Neon + panel gelap transparan, dengan layout responsif HP.
+-- Revisi 3: Cyan Neon, panel lebih kecil untuk HP, status berbingkai cyan.
 local THEME = {
     cyan = G.Math.rgb(0, 235, 255),
     cyanSoft = G.Math.rgb(0, 155, 180),
@@ -891,22 +891,23 @@ local function BuildHubUI()
 
     local vp = Camera.ViewportSize
     local isSmallScreen = vp.X <= 800 or isTouchDevice
+    -- Revisi 3: panel lebih ringkas, terutama pada layar sentuh/HP.
     local initialWidth, initialHeight
-    local topBarHeight = isSmallScreen and 38 or 42
+    local topBarHeight = isSmallScreen and 34 or 38
     local sidebarWidth
     if isSmallScreen then
-        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.88, 260, 430))
-        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.58, 300, 390))
-        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.27, 76, 100))
+        initialWidth = G.Math.floor(G.Math.clamp(vp.X * 0.72, 240, 340))
+        initialHeight = G.Math.floor(G.Math.clamp(vp.Y * 0.48, 260, 320))
+        sidebarWidth = G.Math.floor(G.Math.clamp(initialWidth * 0.25, 64, 82))
     else
-        initialWidth = G.Math.clamp(vp.X * 0.48, 480, 640)
-        initialHeight = G.Math.clamp(vp.Y * 0.58, 330, 440)
-        sidebarWidth = 130
+        initialWidth = G.Math.clamp(vp.X * 0.42, 400, 560)
+        initialHeight = G.Math.clamp(vp.Y * 0.50, 300, 400)
+        sidebarWidth = 112
     end
-    local minPanelWidth = isSmallScreen and 260 or 450
-    local minPanelHeight = 300
-    local maxPanelWidth = math.max(minPanelWidth, math.min(isSmallScreen and 430 or 900, vp.X - 12))
-    local maxPanelHeight = math.max(minPanelHeight, math.min(isSmallScreen and 390 or 650, vp.Y - 12))
+    local minPanelWidth = isSmallScreen and 240 or 400
+    local minPanelHeight = isSmallScreen and 260 or 300
+    local maxPanelWidth = math.max(minPanelWidth, math.min(isSmallScreen and 340 or 560, vp.X - 12))
+    local maxPanelHeight = math.max(minPanelHeight, math.min(isSmallScreen and 320 or 400, vp.Y - 12))
     initialWidth = G.Math.clamp(initialWidth, minPanelWidth, maxPanelWidth)
     initialHeight = G.Math.clamp(initialHeight, minPanelHeight, maxPanelHeight)
 
@@ -1022,8 +1023,8 @@ local function BuildHubUI()
             local delta = Vector2.new(input.Position.X, input.Position.Y) - resizeStartPos
             local minW = minPanelWidth
             local minH = minPanelHeight
-            local maxW = math.max(minW, math.min(isSmallScreen and 430 or 900, Camera.ViewportSize.X - 12))
-            local maxH = math.max(minH, math.min(isSmallScreen and 390 or 650, Camera.ViewportSize.Y - 12))
+            local maxW = math.max(minW, math.min(isSmallScreen and 340 or 560, Camera.ViewportSize.X - 12))
+            local maxH = math.max(minH, math.min(isSmallScreen and 320 or 400, Camera.ViewportSize.Y - 12))
             S.MainFrame.Size = G.Math.ud2(0, G.Math.clamp(resizeStartSize.X + delta.X, minW, math.max(minW, maxW)), 0, G.Math.clamp(resizeStartSize.Y + delta.Y, minH, math.max(minH, maxH)))
         end
     end)
@@ -1160,27 +1161,48 @@ local function BuildHubUI()
     })
     makeDraggable(S.MiniButton)
 
+    -- Watermark/status ikut tema Cyan Neon dengan bingkai yang jelas.
+    local watermarkWidth = isSmallScreen and G.Math.floor(G.Math.clamp(initialWidth * 0.72, 180, 240)) or 240
+    local watermarkHeight = isSmallScreen and 24 or 26
     S.wmFrame = create("Frame", {
         Name = "Watermark",
-        Size = G.Math.ud2(0, 260, 0, 28),
-        Position = G.Math.ud2(0.5, -130, 0, 10),
-        BackgroundColor3 = G.Math.rgb(14, 14, 18),
-        BackgroundTransparency = 0.15,
+        Size = G.Math.ud2(0, watermarkWidth, 0, watermarkHeight),
+        Position = G.Math.ud2(0.5, -watermarkWidth / 2, 0, 8),
+        BackgroundColor3 = THEME.panel2,
+        BackgroundTransparency = 0.06,
+        BorderSizePixel = 0,
         Visible = states.watermark,
+        ZIndex = 30,
         Parent = S.ScreenGui
     }, {
         cCorner(8),
-        cStroke(G.Math.rgb(60, 60, 75), 1.2),
+        cStroke(THEME.cyan, 1.5),
         create("TextLabel", {
             Name = "StatsTxt",
-            Size = G.Math.ud2(1, 0, 1, 0),
+            Size = G.Math.ud2(1, -8, 1, 0),
+            Position = G.Math.ud2(0, 4, 0, 0),
             BackgroundTransparency = 1,
             Text = "HUB  |  FPS: 60  |  Ping: 0ms",
-            TextColor3 = G.Math.rgb(240, 240, 245),
+            TextColor3 = THEME.text,
             Font = Enum.Font.GothamBold,
-            TextSize = 11
+            TextSize = isSmallScreen and 9 or 10,
+            TextScaled = false,
+            ZIndex = 31
         })
     })
+    -- Keep the status strip visually attached to the top edge of the panel.
+    local function syncWatermarkPosition()
+        if not S.wmFrame or not S.wmFrame.Parent then return end
+        local framePos = S.MainFrame.AbsolutePosition
+        local frameSize = S.MainFrame.AbsoluteSize
+        S.wmFrame.Position = G.Math.ud2(
+            0, framePos.X + (frameSize.X - watermarkWidth) / 2,
+            0, framePos.Y - watermarkHeight / 2 + 4
+        )
+    end
+    syncWatermarkPosition()
+    S.Runtime.connections[#S.Runtime.connections + 1] = S.MainFrame:GetPropertyChangedSignal("AbsolutePosition"):Connect(syncWatermarkPosition)
+    S.Runtime.connections[#S.Runtime.connections + 1] = S.MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncWatermarkPosition)
     makeDraggable(S.wmFrame)
 
     S.ModalOverlay = create("Frame", {
