@@ -71,7 +71,7 @@ local states = {
     
     -- Слайдеры и настройки
     flySpeed = 60,
-    tpDelay = 0.01
+    tpDelay = 0.5
 }
 
 local LOCALIZATION = {
@@ -1122,13 +1122,27 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
 
     -- Floating circular dEnZ button: built entirely from Roblox GUI text/shapes;
     -- no local image file or uploaded image asset is required.
+    S.MiniButtonRing = create("Frame", {
+        Name = "dEnzCyanNeonOuterRing",
+        Size = G.Math.ud2(0, 64, 0, 64),
+        Position = G.Math.ud2(0, 12, 0.5, -32),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 39,
+        Parent = S.ScreenGui
+    }, {
+        cCorner(32),
+        cStroke(G.Math.rgb(0, 245, 255), 3)
+    })
+
     S.MiniButton = create("TextButton", {
         Name = "dEnZPanelButton",
         Size = G.Math.ud2(0, 52, 0, 52),
         Position = G.Math.ud2(0, 18, 0.5, -26),
         BackgroundColor3 = G.Math.rgb(4, 20, 27),
         BackgroundTransparency = 1,
-        Text = "dEnZ",
+        Text = "dEnz",
         TextColor3 = G.Math.rgb(0, 245, 255),
         TextStrokeColor3 = G.Math.rgb(0, 225, 255),
         TextStrokeTransparency = 0.12,
@@ -1141,10 +1155,18 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         Parent = S.ScreenGui
     }, {
         cCorner(26),
-        cStroke(G.Math.rgb(0, 225, 255), 2),
+        cStroke(G.Math.rgb(0, 245, 255), 3),
         cTextConstraint(11, 15)
     })
     makeDraggable(S.MiniButton)
+    S.MiniButton:GetPropertyChangedSignal("Visible"):Connect(function()
+        S.MiniButtonRing.Visible = S.MiniButton.Visible
+    end)
+    S.MiniButton:GetPropertyChangedSignal("Position"):Connect(function()
+        local p = S.MiniButton.Position
+        S.MiniButtonRing.Position = G.Math.ud2(p.X.Scale, p.X.Offset - 6, p.Y.Scale, p.Y.Offset - 6)
+    end)
+    S.MiniButtonRing.Visible = S.MiniButton.Visible
     S.MiniButton.MouseEnter:Connect(function()
         G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.15), {
             BackgroundTransparency = 1,
@@ -1293,6 +1315,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
         S.guiOpen = open
         if open then
             S.MiniButton.Visible = false
+            S.MiniButtonRing.Visible = false
             S.MainFrame.Visible = true
             setSmartFade(S.MainFrame, false)
             S.MainScale.Scale = 0.88
@@ -1306,6 +1329,7 @@ initialHeight = math.max(initialHeight, math.min(vp.Y - 32, 240))
                 if not S.guiOpen then
                     S.MainFrame.Visible = false
                     S.MiniButton.Visible = true
+                    S.MiniButtonRing.Visible = true
                     S.MiniButton.Size = G.Math.ud2(0, 40, 0, 40)
                     G.Services.TweenService:Create(S.MiniButton, G.Math.tw(0.25, Enum.EasingStyle.Back), {Size = G.Math.ud2(0, 52, 0, 52)}):Play()
                 end
